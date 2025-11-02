@@ -138,29 +138,6 @@ shutdown /r /t 0
 - No parent process verification
 - No behavioral analysis
 - Hardcoded paths can't be updated without recompiling
-
----
-
-## Project Structure
-
-```
-NoMoreStealers/
-├── NoMoreStealer/              # Kernel driver (C++)
-│   ├── main.cpp               # Driver entry point
-│   ├── internal/Callbacks/    # IRP_MJ_CREATE handler
-│   ├── internal/Paths/        # Protected path management
-│   ├── internal/Process/      # Trust evaluation logic
-│   └── internal/Comm/         # Shared memory communication
-├── NoMoreStealers_Usermode/   # Wails application (Go + HTML/JS)
-│   ├── main.go               # Wails app entry
-│   ├── internal/app/         # Main application logic
-│   ├── internal/comm/        # Shared memory reader
-│   ├── internal/antispy/     # Screen capture blocking
-│   ├── internal/process/     # Process signature verification
-│   └── frontend/             # HTML/CSS/JavaScript UI
-└── docs/                     # Documentation
-```
-
 ---
 
 ## Contributing
