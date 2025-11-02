@@ -1,13 +1,13 @@
-# FolderGuard
+# NoMoreStealer
 
-**FolderGuard** is a Windows file system minifilter driver designed to protect sensitive user data from untrusted processes.
+**NoMoreStealer** is a Windows file system minifilter driver designed to protect sensitive user data from untrusted processes.
 - THIS PROJECT IS IN DEMO, IT ISNT FOOLPROOF. UPDATES WILL COME OVERTIME - ANY PR IS HEAVILY WELCOME
 - THIS IS MY SECOND DRIVER, ANY HELP IS APPRECIATED!
 ---
 
 ## Overview
 
-FolderGuard monitors and controls access to configured sensitive paths, ensuring that only trusted processes can read, write, or delete protected data.
+NoMoreStealer monitors and controls access to configured sensitive paths, ensuring that only trusted processes can read, write, or delete protected data.
 
 **Key features:**
 
@@ -23,7 +23,7 @@ FolderGuard monitors and controls access to configured sensitive paths, ensuring
 
 ## How It Works (High-Level)
 
-* FolderGuard hooks into the Windows file system via **minifilter callbacks** for operations like `IRP_MJ_CREATE`, `WRITE`, and `SET_INFORMATION`.
+* NoMoreStealer hooks into the Windows file system via **minifilter callbacks** for operations like `IRP_MJ_CREATE`, `WRITE`, and `SET_INFORMATION`.
 * The **Paths module** maintains an in-memory list of protected path prefixes.
 * The **Process module** evaluates whether the calling process is trusted.
 * If a process attempts an operation on a protected path and is not trusted, the driver **denies the request** with `STATUS_ACCESS_DENIED` and logs the decision.
@@ -57,34 +57,34 @@ FolderGuard monitors and controls access to configured sensitive paths, ensuring
 3. **Copy the driver** to the system directory:
 
    ```text
-   C:\Windows\System32\drivers\FolderGuard.sys
+   C:\Windows\System32\drivers\NoMoreStealer.sys
    ```
 
 4. **Configure the minifilter instance** in an elevated Command Prompt:
 
    ```cmd
-   reg add "HKLM\SYSTEM\CurrentControlSet\Services\FolderGuard\Instances" /v DefaultInstance /t REG_SZ /d "FolderGuard Instance" /f
-   reg add "HKLM\SYSTEM\CurrentControlSet\Services\FolderGuard\Instances\FolderGuard Instance" /v Altitude /t REG_SZ /d "370000" /f
-   reg add "HKLM\SYSTEM\CurrentControlSet\Services\FolderGuard\Instances\FolderGuard Instance" /v Flags /t REG_DWORD /d 0 /f
+   reg add "HKLM\SYSTEM\CurrentControlSet\Services\NoMoreStealer\Instances" /v DefaultInstance /t REG_SZ /d "NoMoreStealer Instance" /f
+   reg add "HKLM\SYSTEM\CurrentControlSet\Services\NoMoreStealer\Instances\NoMoreStealer Instance" /v Altitude /t REG_SZ /d "370000" /f
+   reg add "HKLM\SYSTEM\CurrentControlSet\Services\NoMoreStealer\Instances\NoMoreStealer Instance" /v Flags /t REG_DWORD /d 0 /f
    ```
 
 5. **Load the driver**:
 
    ```cmd
-   fltmc load FolderGuard
+   fltmc load NoMoreStealer
    ```
 
 6. **Unload the driver** when done:
 
    ```cmd
-   fltmc unload FolderGuard
+   fltmc unload NoMoreStealer
    ```
 
 ---
 
 ## Additional Notes
 
-* The **service name** is `FolderGuard` (not the filename). Ensure the INF/service install matches this name.
+* The **service name** is `NoMoreStealer` (not the filename). Ensure the INF/service install matches this name.
 * Use **VM snapshots** or backups when testing, as kernel crashes may occur.
 - for the love of me use DebugView
 

@@ -1,0 +1,45 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36511.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NoMoreStealer", "NoMoreStealer\NoMoreStealer.vcxproj", "{3DF33258-1569-7492-B5FA-AE1562D47142}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NoMoreStealer_UM", "NoMoreStealer_UM\NoMoreStealer_UM.vcxproj", "{22D00BDD-C9C3-4F93-8F03-F6A40F835CF5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Debug|ARM64.Build.0 = Debug|ARM64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Debug|x64.ActiveCfg = Debug|x64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Debug|x64.Build.0 = Debug|x64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Debug|x64.Deploy.0 = Debug|x64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Release|ARM64.ActiveCfg = Release|ARM64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Release|ARM64.Build.0 = Release|ARM64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Release|ARM64.Deploy.0 = Release|ARM64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Release|x64.ActiveCfg = Release|x64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Release|x64.Build.0 = Release|x64
+		{3DF33258-1569-7492-B5FA-AE1562D47142}.Release|x64.Deploy.0 = Release|x64
+		{22D00BDD-C9C3-4F93-8F03-F6A40F835CF5}.Debug|ARM64.ActiveCfg = Debug|x64
+		{22D00BDD-C9C3-4F93-8F03-F6A40F835CF5}.Debug|ARM64.Build.0 = Debug|x64
+		{22D00BDD-C9C3-4F93-8F03-F6A40F835CF5}.Debug|x64.ActiveCfg = Debug|x64
+		{22D00BDD-C9C3-4F93-8F03-F6A40F835CF5}.Debug|x64.Build.0 = Debug|x64
+		{22D00BDD-C9C3-4F93-8F03-F6A40F835CF5}.Release|ARM64.ActiveCfg = Release|x64
+		{22D00BDD-C9C3-4F93-8F03-F6A40F835CF5}.Release|ARM64.Build.0 = Release|x64
+		{22D00BDD-C9C3-4F93-8F03-F6A40F835CF5}.Release|x64.ActiveCfg = Release|x64
+		{22D00BDD-C9C3-4F93-8F03-F6A40F835CF5}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {867DFAE0-0B47-4596-8C7E-43BFEFE59F34}
+	EndGlobalSection
+EndGlobal
