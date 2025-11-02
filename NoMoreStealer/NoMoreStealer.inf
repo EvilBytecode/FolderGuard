@@ -1,0 +1,62 @@
+;
+; NoMoreStealer.inf
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = System
+ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider    = %ManufacturerName%
+CatalogFile = NoMoreStealer.cat
+DriverVer   = 01/01/2025,1.0.0.0
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+NoMoreStealer.sys = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName% = Standard,NTamd64.10.0...16299
+
+[Standard.NTamd64.10.0...16299]
+%NoMoreStealer.DeviceDesc% = NoMoreStealer_Device, Root\NoMoreStealer
+
+[NoMoreStealer_Device.NT]
+CopyFiles = File_Copy
+
+[File_Copy]
+NoMoreStealer.sys
+
+;-------------- Service installation
+[NoMoreStealer_Device.NT.Services]
+AddService = NoMoreStealer,%SPSVCINST_ASSOCSERVICE%, NoMoreStealer_Service_Inst
+
+; -------------- NoMoreStealer driver install sections
+[NoMoreStealer_Service_Inst]
+DisplayName    = %NoMoreStealer.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\NoMoreStealer.sys
+
+[NoMoreStealer_Device.NT.Wdf]
+KmdfService=NoMoreStealer, NoMoreStealer_wdfsect
+
+[NoMoreStealer_wdfsect]
+KmdfLibraryVersion=1.33
+
+[Strings]
+SPSVCINST_ASSOCSERVICE = 0x00000002
+ManufacturerName = "Your Company Name"
+DiskName = "NoMoreStealer Installation Disk"
+NoMoreStealer.DeviceDesc = "NoMoreStealer Device"
+NoMoreStealer.SVCDESC = "NoMoreStealer Service"
