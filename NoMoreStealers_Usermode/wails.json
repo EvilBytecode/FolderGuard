@@ -1,0 +1,27 @@
+{
+  "name": "NoMoreStealers Client",
+  "outputfilename": "nomorestealers-client",
+  "frontend": {
+    "dir": "frontend",
+    "install": "",
+    "build": "",
+    "dev": ""
+  },
+  "author": {
+    "name": "NoMoreStealers",
+    "email": "info@nomorestealers.com"
+  },
+  "info": {
+    "companyName": "NoMoreStealers",
+    "productName": "NoMoreStealers Client",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright @ 2025"
+  },
+  "obfuscated": false,
+  "debounceMS": 10,
+  "devServer": "localhost:34115",
+  "width": 1024,
+  "height": 768,
+  "frameless": true,
+  "backgroundColour": "#000000"
+}
