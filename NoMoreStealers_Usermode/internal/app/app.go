@@ -258,8 +258,6 @@ func (a *App) monitorLoop() {
 	}
 }
 
-// startWebSocketServer was intentionally removed during cleanup.
-
 func (a *App) EnableAntispy() error {
 	a.AntispyMutex.Lock()
 	defer a.AntispyMutex.Unlock()
