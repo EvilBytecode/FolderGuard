@@ -16,7 +16,7 @@
 | **⚡ Wails Frontend** | [Wails Setup](docs/WAILS_SETUP.md) |
 | **🏗️ How It Works** | [Architecture](docs/ARCHITECTURE.md) |
 | **🤝 Contributing** | [Contributing Guide](docs/CONTRIBUTING.md) |
-
+| **🖌️ Showcase** | [Showacase of UI](docs/Showcase.md) |
 ---
 
 ## What NoMoreStealer Actually Does
