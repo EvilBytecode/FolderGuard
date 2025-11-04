@@ -40,12 +40,13 @@ type App struct {
 }
 
 type Event struct {
-	Type        string `json:"type"`
-	ProcessName string `json:"processName"`
-	PID         uint32 `json:"pid"`
-	Path        string `json:"path"`
-	IsSigned    bool   `json:"isSigned"`
-	Timestamp   string `json:"timestamp"`
+	Type            string `json:"type"`
+	ProcessName     string `json:"processName"`
+	PID             uint32 `json:"pid"`
+	ExecutablePath  string `json:"executablePath"`
+	Path            string `json:"path"`
+	IsSigned        bool   `json:"isSigned"`
+	Timestamp       string `json:"timestamp"`
 }
 
 func New() *App {
@@ -77,9 +78,21 @@ func (a *App) OnStartup(ctx context.Context) {
 	a.Section, a.BaseAddr, a.NotifyData, err = comm.Init()
 	if err != nil {
 		log.Printf("Failed to initialize kernel communication: %v", err)
-		log.Println("Make sure the NoMoreStealers kernel driver is loaded (NoMoreStealers): fltmc load NoMoreStealers")
+		
+		isAccessDenied := strings.Contains(err.Error(), "ACCESS_DENIED") || strings.Contains(err.Error(), "administrator privileges")
+		var errorMsg string
+		if isAccessDenied {
+			errorMsg = "Failed to initialize kernel communication: " + err.Error() + 
+				"\n\nAdministrator privileges are required to access the secure shared memory section." +
+				"\n\nPlease run this application as Administrator."
+			log.Println("ERROR: Administrator privileges required - please run as Administrator")
+		} else {
+			errorMsg = "Failed to initialize kernel communication: " + err.Error() + 
+				"\n\nMake sure the NoMoreStealers kernel driver is loaded:\nfltmc load NoMoreStealers"
+			log.Println("Make sure the NoMoreStealers kernel driver is loaded (NoMoreStealers): fltmc load NoMoreStealers")
+		}
+		
 		go func() {
-			errorMsg := "Failed to initialize kernel communication: " + err.Error() + "\n\nMake sure the NoMoreStealers kernel driver is loaded (NoMoreStealers):\nfltmc load NoMoreStealers"
 			errorEvent := Event{Type: "error", ProcessName: "System", Path: errorMsg, Timestamp: time.Now().Format(time.RFC3339)}
 			for i := 0; i < 20; i++ {
 				time.Sleep(500 * time.Millisecond)
@@ -158,12 +171,6 @@ func (a *App) monitorLoop() {
 			log.Println("Monitor loop stopped")
 			return
 		case <-ticker.C:
-			if a.NotifyData != nil {
-				currentReady := *(*uint32)(unsafe.Pointer(&a.NotifyData.Ready))
-				log.Printf("Monitor status - Ready: %d, LastReady: %d, PID: %d", currentReady, a.LastReady, a.NotifyData.Pid)
-			} else {
-				log.Println("Monitor status - NotifyData is nil")
-			}
 		default:
 			time.Sleep(100 * time.Millisecond)
 			if a.NotifyData == nil {
@@ -177,12 +184,7 @@ func (a *App) monitorLoop() {
 			currentReady := uint32(0)
 			atomicReady := (*uint32)(unsafe.Pointer(&a.NotifyData.Ready))
 			currentReady = atomic.LoadUint32(atomicReady)
-			if currentReady != a.LastReady && time.Since(lastLogTime) > 2*time.Second {
-				log.Printf("Ready state changed: %d -> %d (PID: %d)", a.LastReady, currentReady, a.NotifyData.Pid)
-				lastLogTime = time.Now()
-			}
 			if currentReady == 1 && a.LastReady == 0 {
-				log.Printf("Event detected! PID: %d, Ready: %d", a.NotifyData.Pid, currentReady)
 				pathPtr := (*uint16)(unsafe.Pointer(uintptr(unsafe.Pointer(a.NotifyData)) + unsafe.Sizeof(*a.NotifyData)))
 				pathChars := a.NotifyData.PathLen / 2
 				if a.NotifyData.PathLen%2 != 0 {
@@ -222,18 +224,19 @@ func (a *App) monitorLoop() {
 				executablePath := ""
 				if pidPath, err := process.GetFilePathFromPID(uint32(a.NotifyData.Pid)); err == nil {
 					executablePath = pidPath
-					log.Printf("Got executable path from PID %d: %s", a.NotifyData.Pid, executablePath)
-				} else {
-					log.Printf("Failed to get executable path from PID %d: %v", a.NotifyData.Pid, err)
 				}
 				isSigned := false
 				if executablePath != "" {
 					isSigned = process.IsFileSigned(executablePath)
-				} else {
-					log.Printf("Warning: Could not get executable path for PID %d, marking as unsigned", a.NotifyData.Pid)
-					isSigned = false
 				}
-				event := Event{ProcessName: procName, PID: a.NotifyData.Pid, Path: pathStr, IsSigned: isSigned, Timestamp: time.Now().Format(time.RFC3339)}
+				event := Event{
+					ProcessName:    procName,
+					PID:            a.NotifyData.Pid,
+					ExecutablePath: executablePath,
+					Path:           pathStr,
+					IsSigned:       isSigned,
+					Timestamp:      time.Now().Format(time.RFC3339),
+				}
 				if isSigned {
 					event.Type = "allowed"
 				} else {
@@ -250,7 +253,6 @@ func (a *App) monitorLoop() {
 				atomicReady := (*uint32)(unsafe.Pointer(&a.NotifyData.Ready))
 				atomic.StoreUint32(atomicReady, 0)
 				a.LastReady = 0
-				log.Printf("Event processed and ready flag reset. Type: %s, Process: %s", event.Type, event.ProcessName)
 			} else {
 				a.LastReady = currentReady
 			}
@@ -309,7 +311,10 @@ func (a *App) logEventToFile(e Event) {
 	safePath := e.Path
 	safePath = string([]byte(safePath))
 	safePath = replaceNewlines(safePath)
-	line := fmt.Sprintf("%s	%s	PID:%d	Signed:%t	Process:%s	Path:%s", time.Now().Format(time.RFC3339), e.Type, e.PID, e.IsSigned, e.ProcessName, safePath)
+	safeExecPath := e.ExecutablePath
+	safeExecPath = string([]byte(safeExecPath))
+	safeExecPath = replaceNewlines(safeExecPath)
+	line := fmt.Sprintf("%s	%s	PID:%d	Signed:%t	Process:%s	ExecPath:%s	TargetPath:%s", time.Now().Format(time.RFC3339), e.Type, e.PID, e.IsSigned, e.ProcessName, safeExecPath, safePath)
 	if a.Logger != nil {
 		a.Logger.Log(line)
 		return
