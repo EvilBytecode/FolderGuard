@@ -1,5 +1,5 @@
 # 🤝 Contributing to NoMoreStealer
-
+# Update v1.0.0 - LAST UPDATE -> 04/11/2025
 > **Help improve this demonstration security project - contributions welcome!**
 
 ---
@@ -20,8 +20,11 @@
 
 ### What Actually Works
 - ✅ Basic `IRP_MJ_CREATE` interception via Filter Manager
+- ✅ Extended IRP coverage: `IRP_MJ_WRITE`, `IRP_MJ_SET_INFORMATION`, `IRP_MJ_READ`, `IRP_MJ_CLEANUP`
 - ✅ Hardcoded path protection (128 paths maximum)
-- ✅ Simple process allowlists (filename-based)
+- ✅ Process path verification (not just filename matching)
+- ✅ Support for process names >15 characters
+- ✅ Memory-mapped file access protection
 - ✅ Shared memory communication (4KB section)
 - ✅ Wails-based frontend with real-time events
 - ✅ Digital signature verification using WinVerifyTrust
@@ -32,17 +35,17 @@
 
 #### 🚨 Critical Security Issues
 
-**1. Process Name Spoofing (Trivial Bypass)**
-- **Problem**: Malware can name itself `chrome.exe` to bypass protection
-- **Current Code**: Simple `strcmp()` against hardcoded filenames
-- **Location**: `NoMoreStealer/internal/Process/process.cpp:64-89`
-- **Impact**: Complete bypass by filename manipulation
+**1. Process Name Spoofing** ✅ **FIXED**
+- **Status**: Fixed - processes now require path verification
+- **Implementation**: `VerifyTrustedProcessPath()` validates process installation path
+- **Location**: `NoMoreStealer/internal/Process/process.cpp:218-278`
+- **Remaining**: Process injection into trusted processes still possible
 
-**2. Limited IRP Coverage**
-- **Problem**: Only monitors `IRP_MJ_CREATE`, ignores writes/modifications
-- **Current Code**: `CallbacksArray[] = { { IRP_MJ_CREATE, 0, ... } }`
-- **Location**: `NoMoreStealer/main.cpp:43-46`
-- **Impact**: Malware can open files normally, then write/modify them
+**2. Limited IRP Coverage** ✅ **IMPROVED**
+- **Status**: Extended - now monitors `WRITE`, `SET_INFORMATION`, `READ`, `CLEANUP`, `FILE_SYSTEM_CONTROL`
+- **Current Coverage**: `IRP_MJ_CREATE`, `IRP_MJ_WRITE`, `IRP_MJ_SET_INFORMATION`, `IRP_MJ_READ`, `IRP_MJ_CLEANUP`, `IRP_MJ_FILE_SYSTEM_CONTROL`
+- **Location**: `NoMoreStealer/main.cpp:43-46`, `NoMoreStealer/internal/Callbacks/callbacks.cpp:195-202`
+- **Remaining**: Post-operation callbacks not implemented
 
 **3. Hardcoded Configuration**
 - **Problem**: Protected paths compiled into driver, can't adapt
@@ -52,17 +55,17 @@
 
 #### 🔧 Implementation Issues
 
-**4. No User-Mode Communication**
-- **Problem**: Uses `DbgPrint` instead of proper notifications
-- **Current Code**: `DbgPrint("[NoMoreStealer] ...")` throughout callbacks
-- **Location**: `NoMoreStealer/internal/Callbacks/callbacks.cpp`
-- **Impact**: Poor user experience, debug-only visibility
+**4. User-Mode Communication** ✅ **IMPROVED**
+- **Status**: Has shared memory communication (4KB section)
+- **Current Implementation**: Shared memory + `DbgPrint` for debugging
+- **Location**: `NoMoreStealer/internal/Comm/comm.cpp`, `NoMoreStealer/internal/Callbacks/callbacks.cpp`
+- **Remaining**: Still uses `DbgPrint` for detailed logging
 
-**5. Basic Trust Model**
-- **Problem**: No parent process checking, no behavioral analysis
-- **Current Code**: Simple allowlist + `PsIsProtectedProcessLight()`
-- **Location**: `NoMoreStealer/internal/Process/process.cpp:93-101`
-- **Impact**: Sophisticated malware can easily bypass
+**5. Trust Model** ✅ **IMPROVED**
+- **Status**: Enhanced - path verification added, default deny implemented
+- **Current Implementation**: Path verification + whitelist-only + process integrity checks
+- **Location**: `NoMoreStealer/internal/Process/process.cpp:281-377, 819-898`
+- **Remaining**: No parent process checking, no behavioral analysis
 
 ---
 
@@ -70,40 +73,56 @@
 
 ### 🔥 High Impact Improvements
 
-#### 1. Enhanced Process Verification
+#### 1. Enhanced Process Verification ✅ **PARTIALLY IMPLEMENTED**
 **Goal**: Make process spoofing harder
 
 **Current Implementation:**
 ```cpp
 BOOLEAN IsKnownTrustedProcess(PEPROCESS process) {
-    const CHAR* image = PsGetProcessImageFileName(process);
-    return (!_stricmp(image, "chrome.exe") || ...);  // Easily spoofed
+    // Now includes path verification
+    if (!_stricmp(fileName, trustedName)) {
+        if (!VerifyTrustedProcessPath(process, fileName)) {
+            return FALSE;  // Path verification required
+        }
+    }
 }
 ```
 
-**Needed Improvements:**
+**Completed:**
+- ✅ Process path validation (not just filename)
+- ✅ Device path matching (handles `\Device\...` paths)
+- ✅ Double backslash path handling
+
+**Still Needed:**
 - Parent process verification
-- Process path validation (not just filename)
 - Process genealogy tracking
 - Code signing verification in kernel mode
 
 **Skills Needed**: Windows kernel development, process management APIs
 
-#### 2. Broader IRP Coverage
+#### 2. Broader IRP Coverage ✅ **IMPROVED**
 **Goal**: Monitor file modifications, not just creation
 
 **Current Implementation:**
 ```cpp
 FLT_OPERATION_REGISTRATION CallbacksArray[] = {
-    { IRP_MJ_CREATE, 0, Callbacks::PreOperation, nullptr },  // Only this
+    { IRP_MJ_CREATE, 0, Callbacks::PreOperation, nullptr },
+    { IRP_MJ_WRITE, 0, Callbacks::PreOperation, nullptr },        // ✅ Added
+    { IRP_MJ_SET_INFORMATION, 0, Callbacks::PreOperation, nullptr }, // ✅ Added
+    { IRP_MJ_READ, 0, Callbacks::PreOperation, nullptr },        // ✅ Added
+    { IRP_MJ_CLEANUP, 0, Callbacks::PreOperation, nullptr },      // ✅ Added
+    { IRP_MJ_FILE_SYSTEM_CONTROL, 0, Callbacks::PreOperation, nullptr }, // ✅ Added
     { IRP_MJ_OPERATION_END, 0, nullptr, nullptr }
 };
 ```
 
-**Needed Additions:**
-- `IRP_MJ_WRITE` monitoring
-- `IRP_MJ_SET_INFORMATION` for renames/deletes
-- `IRP_MJ_READ` for sensitive data access
+**Completed:**
+- ✅ `IRP_MJ_WRITE` monitoring
+- ✅ `IRP_MJ_SET_INFORMATION` for renames/deletes
+- ✅ `IRP_MJ_READ` for sensitive data access
+- ✅ Memory-mapped file access protection
+
+**Still Needed:**
 - Post-operation callbacks for cleanup
 
 **Skills Needed**: Windows Filter Manager, IRP handling
@@ -347,20 +366,22 @@ Brief description of the change and why it's needed.
 
 ### How Malware Currently Bypasses NoMoreStealer
 
-1. **Filename Spoofing**
+1. **Filename Spoofing** ✅ **FIXED**
 ```cpp
-// Current vulnerable code:
-if (!_stricmp(image, "chrome.exe")) return TRUE;
-
-// Bypass: Rename malware.exe to chrome.exe
+// Fixed - now requires path verification:
+if (!_stricmp(fileName, "chrome.exe")) {
+    if (!VerifyTrustedProcessPath(process, fileName)) {
+        return FALSE;  // Path must match trusted location
+    }
+}
+// Bypass: No longer possible - path verification required
 ```
 
-2. **Write After Open**
+2. **Write After Open** ✅ **FIXED**
 ```cpp
-// Current limitation:
-{ IRP_MJ_CREATE, 0, Callbacks::PreOperation, nullptr }
-
-// Bypass: Open file normally, then write to it (no IRP_MJ_WRITE monitoring)
+// Fixed - now monitors IRP_MJ_WRITE:
+{ IRP_MJ_WRITE, 0, Callbacks::PreOperation, nullptr },  // ✅ Added
+// Bypass: No longer possible - writes are monitored
 ```
 
 3. **Alternate Paths**
