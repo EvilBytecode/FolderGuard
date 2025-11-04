@@ -208,20 +208,41 @@ class NoMoreStealers {
                     <i class="fas fa-cube text-blue-400"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <div class="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wider">Process</div>
+                    <div class="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wider">Process Name</div>
                     <div class="font-bold text-lg text-white truncate">${this.escapeHtml(event.processName)}</div>
                 </div>
                 <div class="flex items-center space-x-2 bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20">
                     <i class="fas fa-hashtag text-purple-400 text-xs"></i>
-                    <span class="font-mono font-semibold text-purple-300">${event.pid || 'N/A'}</span>
+                    <span class="font-mono font-semibold text-purple-300">PID: ${event.pid || 'N/A'}</span>
                 </div>
             </div>
+            ${event.executablePath ? `
+            <div class="flex items-start space-x-4 p-4 bg-gray-800/30 rounded-xl border border-gray-700/30">
+                <div class="w-10 h-10 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-file-code text-amber-400"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wider">Executable Path</div>
+                    <div class="font-mono text-sm text-gray-300 break-all leading-relaxed">${this.escapeHtml(event.executablePath)}</div>
+                </div>
+            </div>
+            ` : `
+            <div class="flex items-start space-x-4 p-4 bg-red-900/20 rounded-xl border border-red-500/30">
+                <div class="w-10 h-10 bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-red-400"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-xs text-red-400 font-semibold mb-1 uppercase tracking-wider">Warning</div>
+                    <div class="text-sm text-red-200">Could not retrieve executable path (Access Denied)</div>
+                </div>
+            </div>
+            `}
             <div class="flex items-start space-x-4 p-4 bg-gray-800/30 rounded-xl border border-gray-700/30">
                 <div class="w-10 h-10 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
                     <i class="fas fa-folder-open text-green-400"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <div class="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wider">Path</div>
+                    <div class="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wider">Target Path</div>
                     <div class="font-mono text-sm text-gray-300 break-all leading-relaxed">${this.escapeHtml(event.path || 'N/A')}</div>
                 </div>
             </div>
