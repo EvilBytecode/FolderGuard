@@ -1,7 +1,6 @@
 package process
 
 import (
-	"log"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -62,7 +61,12 @@ func GetFilePathFromPID(pid uint32) (string, error) {
 
 	buf := make([]uint16, windows.MAX_PATH)
 	ret, _, err := ProcGetModuleFileNameExW.Call(uintptr(hProcess), 0, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
-	if ret == 0 || err != nil {
+	if ret == 0 {
+		if err != nil && err.Error() == "The operation completed successfully." {
+				if windows.UTF16ToString(buf) != "" {
+				return windows.UTF16ToString(buf), nil
+			}
+		}
 		return "", err
 	}
 	return windows.UTF16ToString(buf), nil
@@ -70,31 +74,24 @@ func GetFilePathFromPID(pid uint32) (string, error) {
 
 func IsFileSigned(filePath string) bool {
 	actualPath := filePath
-	log.Printf("IsFileSigned called with path: %s", filePath)
 
 	if len(filePath) >= 8 && filePath[:8] == "\\Device\\" {
 		if dosPath, ok := paths.DevicePathToDOSPath(filePath); ok {
 			actualPath = dosPath
-			log.Printf("Converted device path to: %s", actualPath)
 		} else {
-			log.Printf("Failed to convert device path: %s", filePath)
 			return false
 		}
 	}
 
 	pathUTF16, err := windows.UTF16PtrFromString(actualPath)
 	if err != nil {
-		log.Printf("Failed to convert path to UTF16: %v", err)
 		return false
 	}
 
 	attrs, err := windows.GetFileAttributes(pathUTF16)
 	if err != nil || attrs == windows.INVALID_FILE_ATTRIBUTES {
-		log.Printf("File does not exist or invalid attributes: %s", actualPath)
 		return false
 	}
-
-	log.Printf("Checking signature for file: %s", actualPath)
 
 	wintrust := windows.NewLazySystemDLL("wintrust.dll")
 	procWinVerifyTrust := wintrust.NewProc("WinVerifyTrust")
@@ -168,11 +165,8 @@ func IsFileSigned(filePath string) bool {
 	procWinVerifyTrust.Call(0, uintptr(unsafe.Pointer(&actionGUID[0])), uintptr(unsafe.Pointer(&wtData)))
 
 	if fileRet == ERROR_SUCCESS {
-		log.Printf("File signature verification succeeded for: %s", actualPath)
 		return true
 	}
-
-	log.Printf("File signature verification failed for: %s, error: 0x%08X, trying catalog verification...", actualPath, fileRet)
 
 	catalogInfo := winTrustCatalogInfo{StructSize: uint32(unsafe.Sizeof(winTrustCatalogInfo{})), CatalogVersion: 0, MemberTag: pathUTF16, HashAlgorithm: 0}
 
@@ -193,10 +187,8 @@ func IsFileSigned(filePath string) bool {
 	procWinVerifyTrust.Call(0, uintptr(unsafe.Pointer(&actionGUID[0])), uintptr(unsafe.Pointer(&wtData)))
 
 	if catalogRet == ERROR_SUCCESS {
-		log.Printf("Catalog verification succeeded for: %s", actualPath)
 		return true
 	}
 
-	log.Printf("Catalog verification failed for: %s, error: 0x%08X", actualPath, catalogRet)
 	return false
 }
