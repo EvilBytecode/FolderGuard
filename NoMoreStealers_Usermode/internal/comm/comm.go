@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	NmsSectionName = `\BaseNamedObjects\NoMoreStealersNotify`
+	NmsSectionName = `\BaseNamedObjects\NoMoreStealerNotify`
 )
 
 type NoMoreStealersNotifyData struct {
@@ -54,6 +54,8 @@ func NtSuccess(status uint32) bool {
 }
 
 // Init opens and maps the shared section used for kernel-to-user notifications.
+// The section is secured with a DACL that only allows SYSTEM and Administrators access.
+// This function requires the calling process to have administrator privileges.
 // It returns the section handle, base address of the mapping and a typed pointer
 // to the notification structure.
 func Init() (windows.Handle, uintptr, *NoMoreStealersNotifyData, error) {
@@ -75,6 +77,11 @@ func Init() (windows.Handle, uintptr, *NoMoreStealersNotifyData, error) {
 	var sectionHandle windows.Handle
 	ret, _, _ := ProcNtOpenSection.Call(uintptr(unsafe.Pointer(&sectionHandle)), SECTION_MAP_READ|SECTION_MAP_WRITE, uintptr(unsafe.Pointer(&oa)))
 	if !NtSuccess(uint32(ret)) {
+		// ACCESS_DENIED (0xC0000022) indicates insufficient privileges
+		// The section is secured to require Administrator or SYSTEM access
+		if uint32(ret) == 0xC0000022 {
+			return 0, 0, nil, fmt.Errorf("NtOpenSection failed: ACCESS_DENIED (0x%08X) - administrator privileges required", ret)
+		}
 		return 0, 0, nil, fmt.Errorf("NtOpenSection failed: 0x%08X", ret)
 	}
 
