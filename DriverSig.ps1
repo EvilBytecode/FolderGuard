@@ -1,6 +1,11 @@
 # Simple PowerShell script to sign NoMoreStealer driver using LazySign
 # Usage: Run from anywhere - uses absolute paths
 # Use LazySign on github
+
+# disable signing in project settings or create new cert
+# the cert its autosigning with isnt trusted by default
+# its only trusted locally automatically when you create the project
+# not when you share the project, thats why we use signtool for now.
 $LazySignPath = "C:\Users\YOURUSERNAME\Downloads\LazySign-main\LazySign-main\lazysign\signtool.exe"
 $ProjectDir = "C:\Users\YOURUSERNAME\Downloads\NoMoreStealers-main"
 $DriverDir = "$ProjectDir\x64\Release\NoMoreStealer"
