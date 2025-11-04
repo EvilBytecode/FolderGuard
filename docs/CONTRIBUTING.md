@@ -1,5 +1,5 @@
 # 🤝 Contributing to NoMoreStealer
-# Update v1.0.0 - LAST UPDATE -> 04/11/2025
+
 > **Help improve this demonstration security project - contributions welcome!**
 
 ---
@@ -55,11 +55,18 @@
 
 #### 🔧 Implementation Issues
 
-**4. User-Mode Communication** ✅ **IMPROVED**
-- **Status**: Has shared memory communication (4KB section)
-- **Current Implementation**: Shared memory + `DbgPrint` for debugging
-- **Location**: `NoMoreStealer/internal/Comm/comm.cpp`, `NoMoreStealer/internal/Callbacks/callbacks.cpp`
-- **Remaining**: Still uses `DbgPrint` for detailed logging
+**4. User-Mode Communication** ✅ **IMPLEMENTED**
+- **Status**: Fully implemented - Shared memory + work items + event system
+- **Current Implementation**: 
+  - Shared memory section (`\BaseNamedObjects\NoMoreStealerNotify`) with DACL security
+  - Kernel work items (`IoQueueWorkItem`) for async notifications
+  - User-mode polling loop (`monitorLoop`) reads from shared memory
+  - Event channel + WebSocket broadcasting to frontend
+- **Location**: 
+  - Kernel: `NoMoreStealer/internal/Comm/comm.cpp` (shared memory + work items)
+  - User-mode: `NoMoreStealers_Usermode/internal/comm/comm.go` (section reader)
+  - User-mode: `NoMoreStealers_Usermode/internal/app/app.go:163-230` (monitor loop)
+- **Details**: Uses `NotifyBlock()` from callbacks to queue work items that write to shared memory
 
 **5. Trust Model** ✅ **IMPROVED**
 - **Status**: Enhanced - path verification added, default deny implemented
@@ -149,12 +156,25 @@ void DiscoverDefaultPaths() {
 
 ### 🛠️ Technical Improvements
 
-#### 4. Proper User-Mode Communication
+#### 4. Proper User-Mode Communication ✅ **IMPLEMENTED**
 **Goal**: Replace DbgPrint with real notifications
 
 **Current Implementation:**
 ```cpp
-DbgPrint("[NoMoreStealer] BLOCKED: Proc=%s PID=%lu Path=%wZ\n", ...);
+// Kernel side - comm.cpp
+VOID NotifyBlock(_In_ PUNICODE_STRING path, _In_opt_ const CHAR* procNameAnsi, _In_ ULONG pid) {
+    // Creates work item, queues it, writes to shared memory section
+    IoQueueWorkItem(workItem->WorkItem, NotifyWorkRoutine, DelayedWorkQueue, workItem);
+}
+
+// User-mode side - app.go
+func (a *App) monitorLoop() {
+    // Polls shared memory section for new notifications
+    if currentReady == 1 && a.LastReady == 0 {
+        // Reads path, process name, PID from shared memory
+        // Creates Event, broadcasts via WebSocket
+    }
+}
 ```
 
 **Needed Implementation:**
