@@ -4,6 +4,7 @@ export namespace app {
 	    type: string;
 	    processName: string;
 	    pid: number;
+	    executablePath: string;
 	    path: string;
 	    isSigned: boolean;
 	    timestamp: string;
@@ -17,6 +18,7 @@ export namespace app {
 	        this.type = source["type"];
 	        this.processName = source["processName"];
 	        this.pid = source["pid"];
+	        this.executablePath = source["executablePath"];
 	        this.path = source["path"];
 	        this.isSigned = source["isSigned"];
 	        this.timestamp = source["timestamp"];
