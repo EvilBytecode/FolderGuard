@@ -1,17 +1,14 @@
 //go:build windows
-
-package tray
-
-import (
-	"syscall"
 package tray
 
 import (
 	"sync"
+	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
+
 
 var (
 	shell32              = windows.NewLazySystemDLL("shell32.dll")
