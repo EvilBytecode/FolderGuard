@@ -39,3 +39,14 @@ export function TerminateProcess(arg1:number):Promise<void>;
 export function UpdateSettings(arg1:app.Settings):Promise<app.Settings>;
 
 export function UploadVirusTotal(arg1:string):Promise<app.VirusTotalReport>;
+export function DisableAntispy():Promise<void>;
+
+export function EnableAntispy():Promise<void>;
+
+export function GetEvents():Promise<Array<app.Event>>;
+
+export function IsAntispyActive():Promise<boolean>;
+
+export function Quit():Promise<void>;
+
+export function Show():Promise<void>;

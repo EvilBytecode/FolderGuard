@@ -77,3 +77,6 @@ export function UpdateSettings(arg1) {
 export function UploadVirusTotal(arg1) {
   return window['go']['app']['App']['UploadVirusTotal'](arg1);
 }
+export function Show() {
+  return window['go']['app']['App']['Show']();
+}

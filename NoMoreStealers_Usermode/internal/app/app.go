@@ -12,6 +12,10 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"context"
+	"fmt"
+	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -96,6 +100,12 @@ func New() *App {
 
 	if err := a.loadConfig(); err != nil {
 		log.Printf("Failed to load settings: %v", err)
+func New() *App {
+	ctx, cancel := context.WithCancel(context.Background())
+	a := &App{
+		EventChan:   make(chan Event, 100),
+		InternalCtx: ctx,
+		Cancel:      cancel,
 	}
 
 	tmp := os.TempDir()
@@ -162,6 +172,9 @@ func (a *App) handleKillswitchEvents(killswitchEventChan chan killswitch.Killswi
 	}
 }
 
+	return a
+}
+
 func (a *App) OnStartup(ctx context.Context) {
 	a.Ctx = ctx
 	a.WsServer = ws.NewServer()
@@ -201,6 +214,7 @@ func (a *App) OnStartup(ctx context.Context) {
 				case a.EventChan <- errorEvent:
 				default:
 				}
+				a.EventChan <- errorEvent
 				if a.WsServer != nil && a.WsServer.ClientCount() > 0 {
 					a.WsServer.Broadcast(errorEvent)
 					break
@@ -358,12 +372,14 @@ func (a *App) monitorLoop() {
 				}
                 now := time.Now().UTC()
                 event := Event{
+				event := Event{
 					ProcessName:    procName,
 					PID:            a.NotifyData.Pid,
 					ExecutablePath: executablePath,
 					Path:           pathStr,
 					IsSigned:       isSigned,
                     Timestamp:      now.Format(time.RFC3339),
+					Timestamp:      time.Now().Format(time.RFC3339),
 				}
 				if isSigned {
 					event.Type = "allowed"
@@ -373,6 +389,7 @@ func (a *App) monitorLoop() {
                 a.recordFileSighting(event.Path, now)
                 a.recordFileSighting(event.ExecutablePath, now)
                 go a.logEventToFile(event)
+				go a.logEventToFile(event)
 				select {
 				case a.EventChan <- event:
 				default:

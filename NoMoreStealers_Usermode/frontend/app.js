@@ -13,16 +13,6 @@ class NoMoreStealers {
         this.pollInterval = 1000;
         this.tutorialStep = 1;
         this.maxTutorialSteps = 6;
-        this.currentFilter = 'all'; // 'all', 'antispy', 'antirat'
-        this.eventDetailsOverlay = null;
-        this.eventDetailsBody = null;
-        this.eventDetailsTitle = null;
-        this.eventDetailsClose = null;
-        this.eventDetailsInitialized = false;
-        this.settings = {
-            virusTotalApiKey: ''
-        };
-        this.settingsStatusTimer = null;
         window.addEventListener('DOMContentLoaded', () => this.init());
         setInterval(() => this.updateAntispyStatus(), this.pollInterval);
     }
@@ -34,15 +24,8 @@ class NoMoreStealers {
         this.connectWebSocket();
         this.initAntispyButton();
         this.initTabs();
-        this.initSettingsTab();
         this.initTutorial();
-        this.initClearButton();
-        this.initKillswitchButton();
-        this.initEventFilters();
-        this.initEventDetailsModal();
         this.updateAntispyStatus();
-        this.updateKillswitchStatus();
-        setInterval(() => this.updateKillswitchStatus(), this.pollInterval);
     }
 
     /**
@@ -199,6 +182,14 @@ class NoMoreStealers {
             eventsList.appendChild(eventCard);
             requestAnimationFrame(() => eventCard.classList.add('fade-in'));
         });
+        const eventsList = document.getElementById('eventsList');
+        const eventCard = this.createEventCard(event);
+        if (eventsList) eventsList.insertBefore(eventCard, eventsList.firstChild);
+        if (this.events.length > 100) {
+            this.events.pop();
+            if (eventsList?.lastChild) eventsList.removeChild(eventsList.lastChild);
+        }
+        requestAnimationFrame(() => eventCard.classList.add('fade-in'));
     }
 
     /**
@@ -458,6 +449,8 @@ class NoMoreStealers {
             evt.preventDefault();
             this.openEventDetails(event);
         });
+
+        return card;
     }
 
     /**
@@ -494,6 +487,13 @@ class NoMoreStealers {
             credits: document.getElementById('creditsTab'),
             settings: document.getElementById('settingsTab')
         };
+     * Initialize tab buttons for Events / Credits.
+     */
+    initTabs() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const eventsTab = document.getElementById('eventsTab');
+        const aboutTab = document.getElementById('aboutTab');
+        const creditsTab = document.getElementById('creditsTab');
 
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -640,6 +640,21 @@ class NoMoreStealers {
             status.textContent = message || '';
             status.classList.add('text-gray-400');
         }
+    }
+
+    /**
+                eventsTab.classList.add('hidden');
+                aboutTab.classList.add('hidden');
+                creditsTab.classList.add('hidden');
+                if (tab === 'events') {
+                    eventsTab.classList.remove('hidden');
+                } else if (tab === 'about') {
+                    aboutTab.classList.remove('hidden');
+                } else if (tab === 'credits') {
+                    creditsTab.classList.remove('hidden');
+                }
+            });
+        });
     }
 
     /**

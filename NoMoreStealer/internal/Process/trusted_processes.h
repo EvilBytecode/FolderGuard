@@ -10,6 +10,7 @@
 
 // Buffer length for path handling
 #define PATH_BUF_LEN 512
+#pragma once
 
 namespace NoMoreStealer {
     namespace Process {
@@ -96,6 +97,13 @@ namespace NoMoreStealer {
             // -------------------------
             // Data: mappings & lists
             // -------------------------
+
+            struct ProcessPathMapping {
+                const CHAR* processName;
+                const CHAR* paths[4];
+                ULONG pathCount;
+            };
+
             static const ProcessPathMapping PROCESS_PATH_MAPPINGS[] = {
                 { "chrome.exe", { "\\program files\\google\\chrome", "\\program files (x86)\\google\\chrome", "\\appdata\\local\\google\\chrome", nullptr }, 3 },
                 { "brave.exe", { "\\program files\\bravesoftware\\brave-browser", "\\program files (x86)\\bravesoftware\\brave-browser", "\\appdata\\local\\bravesoftware\\brave-browser", nullptr }, 3 },
@@ -112,6 +120,12 @@ namespace NoMoreStealer {
                 { "runtimebroker.exe", { "\\windows\\system32\\runtimebroker.exe", "\\windows\\syswow64\\runtimebroker.exe", nullptr, nullptr }, 2 },
                 { "werfault.exe", { "\\windows\\system32\\werfault.exe", "\\windows\\syswow64\\werfault.exe", nullptr, nullptr }, 2 },
                 { "csrss.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", nullptr, nullptr }, 2 },
+                { "Discordptb.exe", { "\\appdata\\local\\discord", "\\appdata\\roaming\\discord", nullptr, nullptr }, 2 },
+                { "DiscordCanary.exe", { "\\appdata\\local\\discord", "\\appdata\\roaming\\discord", nullptr, nullptr }, 2 },
+                { "telegram.exe", { "\\appdata\\roaming\\telegram desktop", "\\program files\\telegram desktop", nullptr, nullptr }, 2 },
+                { "Signal.exe", { "\\appdata\\local\\programs\\signal", "\\program files\\signal", nullptr, nullptr }, 2 },
+                { "explorer.exe", { "\\windows\\explorer.exe", nullptr, nullptr, nullptr }, 1 },
+                { "RuntimeBroker.exe", { "\\windows\\system32\\runtimebroker.exe", "\\windows\\syswow64\\runtimebroker.exe", nullptr, nullptr }, 2 },
                 { "java.exe", { "\\program files\\java", "\\program files (x86)\\java", nullptr, nullptr }, 2 },
                 { "javaw.exe", { "\\program files\\java", "\\program files (x86)\\java", nullptr, nullptr }, 2 },
                 { "exodus.exe", { "\\appdata\\local\\programs\\exodus", "\\appdata\\local\\exodus", nullptr, nullptr }, 2 },
@@ -122,85 +136,50 @@ namespace NoMoreStealer {
                 { "taskhostw.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
                 { "taskhost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
                 { "sihost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
-                { "securityhealthservice.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
-                { "wmiprvse.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
+                { "SecurityHealthService.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
+                { "WmiPrvSE.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
                 { "dllhost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
-                { "searchindexer.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
-                { "searchprotocolhost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
-                { "searchfilterhost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
-                { "shellexperiencehost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
-           
-
+                { "SearchIndexer.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
+                { "SearchProtocolHost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
+                { "SearchFilterHost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
+                { "ShellExperienceHost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 }
             };
+
             static const ULONG PROCESS_PATH_MAPPINGS_COUNT = sizeof(PROCESS_PATH_MAPPINGS) / sizeof(PROCESS_PATH_MAPPINGS[0]);
 
             static const CHAR* TRUSTED_PROCESSES[] = {
-                "system", "csrss.exe", "update.exe", "werfault.exe",
-                "searchindexer.exe", "searchprotocolhost.exe", "searchfilterhost.exe",
+                "SearchIndexer.exe", "SearchProtocolHost.exe", "SearchFilterHost.exe",
                 "svchost.exe", "dwm.exe", "audiodg.exe", "taskhostw.exe", "taskhost.exe",
-                "sihost.exe", "securityhealthservice.exe", "wmiprvse.exe", "dllhost.exe",
+                "sihost.exe", "SecurityHealthService.exe", "WmiPrvSE.exe", "dllhost.exe",
                 "chrome.exe", "msedge.exe", "brave.exe", "firefox.exe", "opera.exe",
-                "vivaldi.exe", "yandex.exe", "discord.exe", "discordptb.exe", "discordcanary.exe",
-                "telegram.exe", "signal.exe", "explorer.exe", "shellexperiencehost.exe",
-                "runtimebroker.exe", "java.exe", "javaw.exe", "filezilla.exe",
-                "exodus.exe", "electrum.exe", "bitcoin-qt.exe", "bitcoind.exe",
-                "atomic.exe", "litecoin-qt.exe", "monerod.exe", "armory.exe", "bytecoind.exe",
-                "coinomi.exe", "dash-qt.exe", "mist.exe", "geth.exe", "guarda.exe",
-                "jaxx.exe", "mymonero.exe", "zcashd.exe", "lghub_agent.exe",
-                "feather launch"
+                "vivaldi.exe", "yandex.exe", "discord.exe", "Discordptb.exe", "DiscordCanary.exe",
+                "telegram.exe", "Signal.exe", "explorer.exe", "ShellExperienceHost.exe",
+                "RuntimeBroker.exe", "Zen.exe", "Battle.net.exe", "Agent.exe", "Battle.net Launcher.exe",
+                "java.exe", "javaw.exe", "Lunar Client.exe", "Feather Launcher.exe",
+                "filezilla.exe", "Minecraft Launcher.exe", "Tlauncher.exe", "Mullvad VPN.exe",
+                "exodus.exe", "electrum.exe", "bitcoin-qt.exe", "bitcoind.exe", "atomic.exe",
+                "litecoin-qt.exe", "monerod.exe", "Armory.exe", "bytecoind.exe", "Coinomi.exe",
+                "dash-qt.exe", "Mist.exe", "geth.exe", "Guarda.exe", "Jaxx.exe", "MyMonero.exe",
+                "zcashd.exe"
             };
+
             static const ULONG TRUSTED_PROCESSES_COUNT = sizeof(TRUSTED_PROCESSES) / sizeof(TRUSTED_PROCESSES[0]);
 
-            static const CHAR* SYSTEM_PROCESSES[] = {
-                "system", "smss.exe", "csrss.exe", "wininit.exe",
-                "services.exe", "lsass.exe", "winlogon.exe"
-            };
-            static const ULONG SYSTEM_PROCESSES_COUNT = sizeof(SYSTEM_PROCESSES) / sizeof(SYSTEM_PROCESSES[0]);
-
-            // NEW: Trusted parent processes
             static const CHAR* TRUSTED_PARENTS[] = {
-                "explorer.exe", "chrome.exe", "msedge.exe", "brave.exe",
-                "firefox.exe", "discord.exe", "telegram.exe", "code.exe",
-                "devenv.exe", "svchost.exe", "winlogon.exe", "services.exe",
-                "lsass.exe", "taskhostw.exe", "runtimebroker.exe"
+                "explorer.exe", "chrome.exe", "brave.exe", "msedge.exe", "firefox.exe",
+                "opera.exe", "svchost.exe", "services.exe"
             };
+
             static const ULONG TRUSTED_PARENTS_COUNT = sizeof(TRUSTED_PARENTS) / sizeof(TRUSTED_PARENTS[0]);
 
-            // -------------------------
-            // Main trust check
-            // -------------------------
-            static inline BOOLEAN IsTrustedProcess(const CHAR* procName, const CHAR* procPath)
-            {
-                CHAR nameBuf[64] = { 0 };
-                CHAR pathBuf[PATH_BUF_LEN] = { 0 };
-                if (!procName) return FALSE;
-                SafeCopyA(nameBuf, sizeof(nameBuf), procName);
-                AsciiToLowerInPlace(nameBuf, sizeof(nameBuf));
+            static const CHAR* SYSTEM_PROCESSES[] = {
+                "System", "smss.exe", "csrss.exe", "wininit.exe", "services.exe",
+                "lsass.exe", "winlogon.exe", "ScreenClipping.exe"
+            };
 
-                for (ULONG i = 0; i < SYSTEM_PROCESSES_COUNT; ++i) {
-                    if (AsciiEqualsI(nameBuf, SYSTEM_PROCESSES[i])) return TRUE;
-                }
+            static const ULONG SYSTEM_PROCESSES_COUNT = sizeof(SYSTEM_PROCESSES) / sizeof(SYSTEM_PROCESSES[0]);
 
-                for (ULONG i = 0; i < TRUSTED_PROCESSES_COUNT; ++i) {
-                    if (AsciiEqualsI(nameBuf, TRUSTED_PROCESSES[i])) return TRUE;
-                }
+        }
+    }
+}
 
-                if (!procPath || SafeStrLen(procPath, PATH_BUF_LEN) == 0) return FALSE;
-                SafeCopyA(pathBuf, sizeof(pathBuf), procPath);
-                AsciiToLowerInPlace(pathBuf, sizeof(pathBuf));
-
-                for (ULONG i = 0; i < PROCESS_PATH_MAPPINGS_COUNT; ++i) {
-                    if (AsciiEqualsI(nameBuf, PROCESS_PATH_MAPPINGS[i].processName)) {
-                        for (ULONG j = 0; j < PROCESS_PATH_MAPPINGS[i].pathCount; ++j) {
-                            const CHAR* sub = PROCESS_PATH_MAPPINGS[i].paths[j];
-                            if (!sub) continue;
-                            if (AsciiStrStrI(pathBuf, sub)) return TRUE;
-                        }
-                        return FALSE;
-                    }
-                }
-                return FALSE;
-            }
-        } // namespace Trusted
-    } // namespace Process
-} // namespace NoMoreStealer
