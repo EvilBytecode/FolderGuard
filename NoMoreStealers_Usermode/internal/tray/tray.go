@@ -1,309 +1,212 @@
-//go:build windows
-package tray
+package process
 
 import (
-	"sync"
-	"syscall"
+	"errors"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
-)
 
-
-var (
-	shell32              = windows.NewLazySystemDLL("shell32.dll")
-	user32               = windows.NewLazySystemDLL("user32.dll")
-	procShellNotifyIconW = shell32.NewProc("Shell_NotifyIconW")
-	procLoadIconW        = user32.NewProc("LoadIconW")
-	procDefWindowProcW   = user32.NewProc("DefWindowProcW")
-	procCreateWindowExW  = user32.NewProc("CreateWindowExW")
-	procDestroyWindow    = user32.NewProc("DestroyWindow")
-	procRegisterClassExW = user32.NewProc("RegisterClassExW")
-	procGetMessageW      = user32.NewProc("GetMessageW")
-	procTranslateMessage = user32.NewProc("TranslateMessage")
-	procDispatchMessageW = user32.NewProc("DispatchMessageW")
-)
-
-var (
-	trayMutex sync.Mutex
-	trayHwnd  windows.Handle
-	isAdded   bool
-	Shell32              = windows.NewLazySystemDLL("shell32.dll")
-	User32               = windows.NewLazySystemDLL("user32.dll")
-	ProcShellNotifyIconW = Shell32.NewProc("Shell_NotifyIconW")
-	ProcLoadIconW        = User32.NewProc("LoadIconW")
-	ProcFindWindowW      = User32.NewProc("FindWindowW")
-	TrayMutex            sync.Mutex
-	TrayHwnd             windows.Handle
-	IsAdded              bool
+	"NoMoreStealers/internal/paths"
 )
 
 const (
-	NIM_ADD         = 0x00000000
-	NIM_MODIFY      = 0x00000001
-	NIM_DELETE      = 0x00000002
-	NIF_MESSAGE     = 0x00000001
-	NIF_ICON        = 0x00000002
-	NIF_TIP         = 0x00000004
-	WM_USER         = 0x0400
-	WM_DESTROY      = 0x0002
-	WM_LBUTTONUP    = 0x0202
-	WM_RBUTTONUP    = 0x0205
-	IDI_APPLICATION = 32512
-	CW_USEDEFAULT   = 0x80000000
-	NIF_ICON        = 0x00000002
-	NIF_MESSAGE     = 0x00000001
-	NIF_TIP         = 0x00000004
-	WM_USER         = 0x0400
-	IDI_APPLICATION = 32512
+	SE_DEBUG_NAME              = "SeDebugPrivilege"
+	PROCESS_QUERY_INFORMATION  = 0x0400
+	PROCESS_QUERY_LIMITED_INFO = 0x1000
+	PROCESS_VM_READ            = 0x0010
 )
 
-var WM_TRAYICON = uint32(WM_USER + 1)
+var (
+	Psapi                     = windows.NewLazySystemDLL("psapi.dll")
+	Advapi32                  = windows.NewLazySystemDLL("advapi32.dll")
+	ProcGetModuleFileNameExW  = Psapi.NewProc("GetModuleFileNameExW")
+	ProcLookupPrivilegeValueW = Advapi32.NewProc("LookupPrivilegeValueW")
+	ProcAdjustTokenPrivileges = Advapi32.NewProc("AdjustTokenPrivileges")
+)
 
-type notifyIconData struct {
-type NotifyIconData struct {
-	StructSize       uint32
-	HWnd             windows.Handle
-	UID              uint32
-	UFlags           uint32
-	UCallbackMessage uint32
-	HIcon            windows.Handle
-	Tip              [128]uint16
-}
+// GetFilePathFromPID retrieves the executable file path of a given process ID.
+func GetFilePathFromPID(pid uint32) (string, error) {
+	token, err := windows.OpenCurrentProcessToken()
+	if err == nil {
+		defer token.Close()
 
-type wndClassEx struct {
-	Size       uint32
-	Style      uint32
-	WndProc    uintptr
-	ClassExtra int32
-	WndExtra   int32
-	Instance   windows.Handle
-	Icon       windows.Handle
-	Cursor     windows.Handle
-	Background windows.Handle
-	MenuName   *uint16
-	ClassName  *uint16
-	IconSm     windows.Handle
-}
-
-var hiddenHwnd windows.Handle
-var trayAppShow func()
-
-// CreateTrayIcon creates a tray icon and starts a message loop to handle clicks
-func CreateTrayIcon(_ windows.Handle, tooltip string) error {
-	trayMutex.Lock()
-	defer trayMutex.Unlock()
-
-	if isAdded {
-		return nil
+		privName, _ := windows.UTF16PtrFromString(SE_DEBUG_NAME)
+		var luid windows.LUID
+		ret, _, _ := ProcLookupPrivilegeValueW.Call(0, uintptr(unsafe.Pointer(privName)), uintptr(unsafe.Pointer(&luid)))
+		if ret != 0 {
+			type tokenPrivileges struct {
+				PrivilegeCount uint32
+				Privileges     [1]struct {
+					Luid       windows.LUID
+					Attributes uint32
+				}
+			}
+			tp := tokenPrivileges{
+				PrivilegeCount: 1,
+				Privileges: [1]struct {
+					Luid       windows.LUID
+					Attributes uint32
+				}{{Luid: luid, Attributes: windows.SE_PRIVILEGE_ENABLED}},
+			}
+			ProcAdjustTokenPrivileges.Call(uintptr(token), 0, uintptr(unsafe.Pointer(&tp)), 0, 0, 0)
+		}
 	}
 
-	hwnd, err := createHiddenWindow()
+	hProcess, err := windows.OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ, false, pid)
+	if err != nil {
+		hProcess, err = windows.OpenProcess(PROCESS_QUERY_LIMITED_INFO, false, pid)
+		if err != nil {
+			return "", err
+		}
+	}
+	defer windows.CloseHandle(hProcess)
+
+	buf := make([]uint16, windows.MAX_PATH)
+	ret, _, err := ProcGetModuleFileNameExW.Call(uintptr(hProcess), 0, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
+	if ret == 0 {
+		if err != nil && err.Error() == "The operation completed successfully." {
+			if windows.UTF16ToString(buf) != "" {
+				return windows.UTF16ToString(buf), nil
+			}
+		}
+		return "", err
+	}
+	return windows.UTF16ToString(buf), nil
+}
+
+// TerminateByPID attempts to terminate the process identified by the provided PID.
+func TerminateByPID(pid uint32) error {
+	if pid == 0 {
+		return errors.New("invalid process id")
+	}
+
+	handle, err := windows.OpenProcess(windows.PROCESS_TERMINATE, false, pid)
 	if err != nil {
 		return err
 	}
+	defer windows.CloseHandle(handle)
 
-	// ✅ Start Windows message loop in background
-	go runMessageLoop(hwnd)
-
-	hIcon, _, _ := procLoadIconW.Call(0, IDI_APPLICATION)
-func CreateTrayIcon(hwnd windows.Handle, tooltip string) error {
-	TrayMutex.Lock()
-	defer TrayMutex.Unlock()
-
-	if IsAdded {
-		return nil
-	}
-
-	TrayHwnd = hwnd
-
-	hIcon, _, _ := ProcLoadIconW.Call(0, IDI_APPLICATION)
-	if hIcon == 0 {
-		return windows.GetLastError()
-	}
-
-	tipUTF16, _ := windows.UTF16FromString(tooltip)
-	if len(tipUTF16) > 128 {
-		tipUTF16 = tipUTF16[:128]
-	}
-
-	nid := notifyIconData{
-		StructSize:       uint32(unsafe.Sizeof(notifyIconData{})),
-	nid := NotifyIconData{
-		StructSize:       uint32(unsafe.Sizeof(NotifyIconData{})),
-		HWnd:             hwnd,
-		UID:              1,
-		UFlags:           NIF_ICON | NIF_MESSAGE | NIF_TIP,
-		UCallbackMessage: WM_TRAYICON,
-		HIcon:            windows.Handle(hIcon),
-	}
-
-	copy(nid.Tip[:], tipUTF16)
-	ret, _, _ := procShellNotifyIconW.Call(NIM_ADD, uintptr(unsafe.Pointer(&nid)))
-	ret, _, _ := ProcShellNotifyIconW.Call(NIM_ADD, uintptr(unsafe.Pointer(&nid)))
-	if ret == 0 {
-		return windows.GetLastError()
-	}
-
-	trayHwnd = hwnd
-	isAdded = true
-	return nil
+	return windows.TerminateProcess(handle, 1)
 }
 
-// RemoveTrayIcon removes the icon from the system tray
-func RemoveTrayIcon() error {
-	trayMutex.Lock()
-	defer trayMutex.Unlock()
+// IsFileSigned checks if a file is digitally signed
+func IsFileSigned(filePath string) bool {
+	actualPath := filePath
 
-	if !isAdded {
-		return nil
-	}
-
-	nid := notifyIconData{
-		StructSize: uint32(unsafe.Sizeof(notifyIconData{})),
-		HWnd:       trayHwnd,
-		UID:        1,
-	}
-	procShellNotifyIconW.Call(NIM_DELETE, uintptr(unsafe.Pointer(&nid)))
-	isAdded = false
-	return nil
-}
-
-// SetTrayCallbacks registers a callback for left-click actions
-func SetTrayCallbacks(onShow func()) {
-	trayAppShow = onShow
-}
-
-// createHiddenWindow creates an invisible window that listens for tray icon messages
-func createHiddenWindow() (windows.Handle, error) {
-	className, _ := windows.UTF16PtrFromString("NoMoreStealersTrayClass")
-
-	wndProc := syscall.NewCallback(func(hwnd windows.Handle, msg uint32, wParam, lParam uintptr) uintptr {
-		switch msg {
-		case WM_TRAYICON:
-			switch lParam {
-			case WM_LBUTTONUP:
-				go onTrayClick()
-			case WM_RBUTTONUP:
-				go onTrayRightClick()
-			}
-		case WM_DESTROY:
-			procDefWindowProcW.Call(uintptr(hwnd), uintptr(msg), wParam, lParam)
+	if len(filePath) >= 8 && filePath[:8] == "\\Device\\" {
+		if dosPath, ok := paths.DevicePathToDOSPath(filePath); ok {
+			actualPath = dosPath
+		} else {
+			return false
 		}
-		ret, _, _ := procDefWindowProcW.Call(uintptr(hwnd), uintptr(msg), wParam, lParam)
-		return ret
-	})
-
-	wc := wndClassEx{
-		Size:      uint32(unsafe.Sizeof(wndClassEx{})),
-		WndProc:   wndProc,
-		ClassName: className,
-		Instance:  windows.CurrentProcess(),
 	}
 
-	ret, _, err := procRegisterClassExW.Call(uintptr(unsafe.Pointer(&wc)))
-	if ret == 0 {
-		return 0, err
+	pathUTF16, err := windows.UTF16PtrFromString(actualPath)
+	if err != nil {
+		return false
 	}
 
-	hwnd, _, err := procCreateWindowExW.Call(
-		0,
-		uintptr(unsafe.Pointer(className)),
-		0,
-		0,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		0, 0, uintptr(windows.CurrentProcess()), 0,
+	attrs, err := windows.GetFileAttributes(pathUTF16)
+	if err != nil || attrs == windows.INVALID_FILE_ATTRIBUTES {
+		return false
+	}
+
+	wintrust := windows.NewLazySystemDLL("wintrust.dll")
+	procWinVerifyTrust := wintrust.NewProc("WinVerifyTrust")
+
+	type winTrustFileInfo struct {
+		StructSize   uint32
+		FilePath     *uint16
+		HFile        uintptr
+		KnownSubject uintptr
+	}
+
+	type winTrustData struct {
+		StructSize         uint32
+		PolicyCallbackData uintptr
+		SIPClientData      uintptr
+		UIChoice           uint32
+		RevocationChecks   uint32
+		UnionChoice        uint32
+		File               uintptr
+		StateAction        uint32
+		StateData          uintptr
+		URLReference       *uint16
+		ProviderFlags      uint32
+		UIContext          uint32
+		SignatureSettings  uintptr
+	}
+
+	type winTrustCatalogInfo struct {
+		StructSize             uint32
+		CatalogVersion         uint32
+		CatalogName            *uint16
+		MemberTag              *uint16
+		MemberFile             *uint16
+		CalculatedFileHash     uintptr
+		CalculatedFileHashSize uint32
+		CatalogBase            uint32
+		HashAlgorithm          uint32
+		HashOffset             uint32
+		HashSize               uint32
+	}
+
+	const (
+		WTD_UI_NONE               = 2
+		WTD_REVOKE_NONE           = 0
+		WTD_CHOICE_FILE           = 1
+		WTD_CHOICE_CATALOG        = 3
+		WTD_STATEACTION_VERIFY    = 1
+		WTD_STATEACTION_CLOSE     = 2
+		WTD_REVOCATION_CHECK_NONE = 0x00000010
+		ERROR_SUCCESS             = 0
 	)
-	if hwnd == 0 {
-		return 0, err
+
+	var actionGUID = [16]byte{0x00, 0xA0, 0x56, 0x0A, 0x44, 0x98, 0xFC, 0x10, 0x10, 0x17, 0x9A, 0x47, 0x0B, 0xDC, 0x9C, 0xE5}
+
+	fileData := winTrustFileInfo{StructSize: uint32(unsafe.Sizeof(winTrustFileInfo{})), FilePath: pathUTF16}
+
+	wtData := winTrustData{
+		StructSize:       uint32(unsafe.Sizeof(winTrustData{})),
+		UIChoice:         WTD_UI_NONE,
+		RevocationChecks: WTD_REVOKE_NONE,
+		UnionChoice:      WTD_CHOICE_FILE,
+		File:             uintptr(unsafe.Pointer(&fileData)),
+		StateAction:      WTD_STATEACTION_VERIFY,
+		ProviderFlags:    WTD_REVOCATION_CHECK_NONE,
 	}
 
-	hiddenHwnd = windows.Handle(hwnd)
-	return hiddenHwnd, nil
-}
+	ret, _, _ := procWinVerifyTrust.Call(0, uintptr(unsafe.Pointer(&actionGUID[0])), uintptr(unsafe.Pointer(&wtData)))
+	fileRet := uint32(ret)
 
-// runMessageLoop keeps the hidden window responsive to tray icon clicks
-func runMessageLoop(hwnd windows.Handle) {
-	var msg struct {
-		Hwnd    windows.Handle
-		Message uint32
-		WParam  uintptr
-		LParam  uintptr
-		Time    uint32
-		Pt      struct{ X, Y int32 }
+	wtData.StateAction = WTD_STATEACTION_CLOSE
+	procWinVerifyTrust.Call(0, uintptr(unsafe.Pointer(&actionGUID[0])), uintptr(unsafe.Pointer(&wtData)))
+
+	if fileRet == ERROR_SUCCESS {
+		return true
 	}
 
-	for {
-		ret, _, _ := procGetMessageW.Call(uintptr(unsafe.Pointer(&msg)), 0, 0, 0)
-		if int32(ret) <= 0 {
-			break
-		}
-		procTranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
-		procDispatchMessageW.Call(uintptr(unsafe.Pointer(&msg)))
-	}
-}
+	catalogInfo := winTrustCatalogInfo{StructSize: uint32(unsafe.Sizeof(winTrustCatalogInfo{})), CatalogVersion: 0, MemberTag: pathUTF16, HashAlgorithm: 0}
 
-// onTrayClick handles left-clicks
-func onTrayClick() {
-	if trayAppShow != nil {
-		trayAppShow()
-	} else {
-		println("[Tray] Left-click detected (no callback set)")
-	}
-}
-
-// onTrayRightClick handles right-clicks
-func onTrayRightClick() {
-	println("[Tray] Right-click detected")
-	IsAdded = true
-	return nil
-}
-
-func RemoveTrayIcon() error {
-	TrayMutex.Lock()
-	defer TrayMutex.Unlock()
-
-	if !IsAdded {
-		return nil
+	wtData = winTrustData{
+		StructSize:       uint32(unsafe.Sizeof(winTrustData{})),
+		UIChoice:         WTD_UI_NONE,
+		RevocationChecks: WTD_REVOKE_NONE,
+		UnionChoice:      WTD_CHOICE_CATALOG,
+		File:             uintptr(unsafe.Pointer(&catalogInfo)),
+		StateAction:      WTD_STATEACTION_VERIFY,
+		ProviderFlags:    WTD_REVOCATION_CHECK_NONE,
 	}
 
-	nid := NotifyIconData{StructSize: uint32(unsafe.Sizeof(NotifyIconData{})), HWnd: TrayHwnd, UID: 1}
-	ret, _, _ := ProcShellNotifyIconW.Call(NIM_DELETE, uintptr(unsafe.Pointer(&nid)))
-	if ret == 0 {
-		return windows.GetLastError()
+	ret, _, _ = procWinVerifyTrust.Call(0, uintptr(unsafe.Pointer(&actionGUID[0])), uintptr(unsafe.Pointer(&wtData)))
+	catalogRet := uint32(ret)
+
+	wtData.StateAction = WTD_STATEACTION_CLOSE
+	procWinVerifyTrust.Call(0, uintptr(unsafe.Pointer(&actionGUID[0])), uintptr(unsafe.Pointer(&wtData)))
+
+	if catalogRet == ERROR_SUCCESS {
+		return true
 	}
 
-	IsAdded = false
-	return nil
-}
-
-func UpdateTrayIcon(hwnd windows.Handle, tooltip string) error {
-	TrayMutex.Lock()
-	defer TrayMutex.Unlock()
-
-	if !IsAdded {
-		return nil
-	}
-
-	hIcon, _, _ := ProcLoadIconW.Call(0, IDI_APPLICATION)
-	tipUTF16, _ := windows.UTF16FromString(tooltip)
-	if len(tipUTF16) > 128 {
-		tipUTF16 = tipUTF16[:128]
-	}
-
-	nid := NotifyIconData{
-		StructSize:       uint32(unsafe.Sizeof(NotifyIconData{})),
-		HWnd:             hwnd,
-		UID:              1,
-		UFlags:           NIF_ICON | NIF_TIP,
-		UCallbackMessage: WM_TRAYICON,
-		HIcon:            windows.Handle(hIcon),
-	}
-
-	copy(nid.Tip[:], tipUTF16)
-	ret, _, _ := ProcShellNotifyIconW.Call(NIM_MODIFY, uintptr(unsafe.Pointer(&nid)))
-	if ret == 0 {
-		return windows.GetLastError()
-	}
-	return nil
+	return false
 }
