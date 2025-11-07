@@ -6,7 +6,7 @@
 #include "internal/Callbacks/callbacks.h"
 #include "internal/Comm/comm.h"
 
-using namespace NoMoreStealer;  // ← optional, für kürzeren Code
+using namespace NoMoreStealer;
 
 PFLT_FILTER gFilterHandle = nullptr;
 
@@ -34,14 +34,13 @@ namespace NoMoreStealer {
             Paths::Init();
             Paths::DiscoverDefaultPaths();
 
-            NTSTATUS status = Comm::Init();
-            if (!NT_SUCCESS(status)) {
-                Paths::Cleanup();
-                return status;
-            }
-
             FLT_OPERATION_REGISTRATION CallbacksArray[] = {
                 { IRP_MJ_CREATE, 0, Callbacks::PreOperation, nullptr },
+                { IRP_MJ_WRITE, 0, Callbacks::PreOperation, nullptr },
+                { IRP_MJ_SET_INFORMATION, 0, Callbacks::PreOperation, nullptr },
+                { IRP_MJ_READ, 0, Callbacks::PreOperation, nullptr },
+                { IRP_MJ_FILE_SYSTEM_CONTROL, 0, Callbacks::PreOperation, nullptr },
+                { IRP_MJ_CLEANUP, 0, Callbacks::PreOperation, nullptr },
                 { IRP_MJ_OPERATION_END, 0, nullptr, nullptr }
             };
 
@@ -56,18 +55,25 @@ namespace NoMoreStealer {
                 nullptr, nullptr, nullptr, nullptr
             };
 
-            status = FltRegisterFilter(DriverObject, &FilterRegistration, &gFilterHandle);
+            NTSTATUS status = FltRegisterFilter(DriverObject, &FilterRegistration, &gFilterHandle);
             if (!NT_SUCCESS(status)) {
-                Comm::Cleanup();
+                Paths::Cleanup();
+                return status;
+            }
+
+            status = Comm::Init(gFilterHandle, DriverObject);
+            if (!NT_SUCCESS(status)) {
+                FltUnregisterFilter(gFilterHandle);
+                gFilterHandle = nullptr;
                 Paths::Cleanup();
                 return status;
             }
 
             status = FltStartFiltering(gFilterHandle);
             if (!NT_SUCCESS(status)) {
+                Comm::Cleanup();
                 FltUnregisterFilter(gFilterHandle);
                 gFilterHandle = nullptr;
-                Comm::Cleanup();
                 Paths::Cleanup();
                 return status;
             }

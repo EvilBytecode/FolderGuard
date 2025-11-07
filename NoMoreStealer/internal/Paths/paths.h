@@ -1,16 +1,19 @@
-﻿#pragma once
+#pragma once
 
 #include <fltKernel.h>
 
-namespace NoMoreStealer {  // ← Geändert von NoMoreStealers
+namespace NoMoreStealer {
 
-    namespace Paths {
+	namespace Paths {
 
-        void Init();
-        void Cleanup();
-        void Add(const WCHAR* path);
-        BOOLEAN IsProtected(PUNICODE_STRING filePath);
-        void DiscoverDefaultPaths();
+		void Init();
+		void Cleanup();
+		void Add(const WCHAR* path);
+		BOOLEAN IsProtected(PUNICODE_STRING filePath);
+		void DiscoverDefaultPaths();
 
-    } // namespace Paths
-} // namespace NoMoreStealer
+	}
+
+}
+
+

@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoMoreStealers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+
+        :root {
+            --bg-deep: #0a0a0f;
+            --bg-elevated: #12121a;
+            --bg-panel: rgba(18, 18, 26, 0.85);
+            --accent-purple: #a78bfa;
+            --accent-pink: #f472b6;
+            --accent-blue: #60a5fa;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-subtle: rgba(148, 163, 184, 0.08);
+            --glow-purple: rgba(167, 139, 250, 0.3);
+        }
+
+        body {
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse 1400px 800px at 20% 10%, rgba(139, 92, 246, 0.08), transparent),
+                radial-gradient(ellipse 1000px 600px at 80% 90%, rgba(96, 165, 250, 0.06), transparent);
+            background-attachment: fixed;
+        }
+
+        .glass-panel {
+            background: var(--bg-panel);
+            backdrop-filter: blur(24px) saturate(150%);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .live-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 20px var(--glow-purple), 0 0 40px rgba(167, 139, 250, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: rgba(18, 18, 26, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .filter-btn:hover {
+            background: rgba(18, 18, 26, 0.8);
+            border-color: rgba(167, 139, 250, 0.4);
+            color: var(--text-primary);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));
+            border-color: rgba(167, 139, 250, 0.5);
+            color: var(--accent-purple);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border-radius: 12px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(167, 139, 250, 0.1);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-purple);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink));
+            border-radius: 3px 3px 0 0;
+        }
+
+        .event-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        .event-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+            border-color: rgba(167, 139, 250, 0.3);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-blocked {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .status-allowed {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .contributor-card {
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.05), rgba(96, 165, 250, 0.03));
+            border: 2px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 40px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contributor-card::before {
+            /* removed gradient reveal for credits per request */
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            z-index: -1;
+            opacity: 0;
+        }
+
+        .contributor-card:hover {
+            /* subtle lift only, no gradient hover */
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(2,6,23,0.5);
+        }
+
+        .crown {
+            position: absolute;
+            top: 8px; /* place inside the card at the top-right corner */
+            right: 16px;
+            font-size: 40px;
+            color: #fbbf24;
+            filter: drop-shadow(0 4px 12px rgba(251, 191, 36, 0.6));
+            pointer-events: none;
+            z-index: 10;
+            /* static crown — no animation */
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(167, 139, 250, 0.15);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-purple);
+        }
+
+        .contributor-badge {
+            background: rgba(96, 165, 250, 0.15);
+            border-color: rgba(96, 165, 250, 0.3);
+            color: var(--accent-blue);
+        }
+
+        .avatar {
+            width: 96px;
+            height: 96px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            color: white;
+            box-shadow: 0 8px 24px rgba(167, 139, 250, 0.4);
+            position: relative;
+        }
+
+        .avatar::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.5;
+            filter: blur(12px);
+        }
+
+        .scrollbar-custom::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+            background: rgba(167, 139, 250, 0.3);
+            border-radius: 10px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+            background: rgba(167, 139, 250, 0.5);
+        }
+
+        /* Total events styling and count animation */
+        .total-events { min-width: 140px; padding: 12px 18px; border-radius: 12px; display: inline-block; }
+        .total-events .count { font-size: 2.25rem; font-weight: 800; background: linear-gradient(90deg, #b692ff, #ff74c7); -webkit-background-clip: text; background-clip: text; color: transparent; line-height: 1; }
+        .count-highlight { animation: pop 420ms cubic-bezier(.2,.9,.2,1); }
+        @keyframes pop { 0% { transform: scale(0.9); opacity: 0.6 } 50% { transform: scale(1.12); opacity: 1 } 100% { transform: scale(1); opacity: 1 } }
+
+        .hidden { display: none !important; }
+
+        .tutorial-step {
+            animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .tutorial-step.slide-in-left {
+            animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .tutorial-step.hiding {
+            animation: slideOutLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+
+        .tutorial-step.hiding-right {
+            animation: slideOutRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOutLeft {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+        }
+
+        .step-progress {
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink));
+            border-radius: 2px;
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .step-indicator {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .step-indicator.active {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(167, 139, 250, 0.5);
+        }
+
+        .step-indicator.completed {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .step-indicator.pending {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            border: 2px solid rgba(148, 163, 184, 0.3);
+        }
+
+        @media (max-width: 900px) {
+            .header-content { flex-direction: column; gap: 16px; }
+            .header-right { width: 100%; flex-wrap: wrap; }
+            .contributor-card { padding: 24px; }
+            .crown { font-size: 32px; top: 8px; right: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex flex-col">
+        <header class="glass-panel m-4 mb-0">
+            <div class="px-8 py-6">
+                <div class="flex items-center justify-between header-content">
+                    <div class="flex items-center gap-5">
+                        <div class="relative w-16 h-16 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-xl glow-effect">
+                            <i class="fas fa-shield-alt text-white text-3xl"></i>
+                            <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-900 live-pulse"></div>
+                        </div>
+                        <div>
+                            <h1 class="text-4xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                                NoMoreStealers
+                            </h1>
+                            <p class="text-sm text-gray-400 font-semibold mt-1">Real-time Process Protection System</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 header-right">
+                        <button id="antispyBtn" class="glass-panel px-6 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-pink-600/20 transition-all duration-300 flex items-center gap-3 border border-purple-500/30 hover:border-purple-400/60 min-w-[140px] group relative overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <i class="fas fa-eye-slash text-purple-400 text-lg relative z-10 group-hover:text-purple-300 transition-colors"></i>
+                            <span class="font-bold relative z-10 group-hover:text-white transition-colors" id="antispyText">Enable Antispy</span>
+                        </button>
+                        <div class="glass-panel px-6 py-3 rounded-xl flex items-center gap-3 min-w-[100px]">
+                            <div class="w-3 h-3 bg-green-400 rounded-full live-pulse"></div>
+                            <span class="font-bold">Active</span>
+                        </div>
+                        <div class="glass-panel px-6 py-3 rounded-xl flex items-center gap-3 min-w-[140px]">
+                            <i class="fas fa-chart-line text-purple-400 text-lg"></i>
+                            <div class="flex flex-col items-start">
+                                <div class="text-xs text-gray-400 font-semibold">TOTAL EVENTS</div>
+                                <div id="eventCount" class="font-bold text-lg">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-800/50 px-8">
+                <div class="flex gap-2">
+                    <button class="tab-btn active" data-tab="events">
+                        <i class="fas fa-list-ul mr-2"></i>Events
+                    </button>
+                    <button class="tab-btn" data-tab="antirat">
+                        <i class="fas fa-shield-virus mr-2"></i>Anti Rat
+                    </button>
+                    <button class="tab-btn" data-tab="settings">
+                        <i class="fas fa-sliders-h mr-2"></i>Settings
+                    </button>
+                    <button class="tab-btn" data-tab="about">
+                        <i class="fas fa-info-circle mr-2"></i>About
+                    </button>
+                    <button class="tab-btn" data-tab="credits">
+                        <i class="fas fa-users mr-2"></i>Credits
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto px-4 py-6 scrollbar-custom">
+            <div id="eventsTab" class="max-w-7xl mx-auto">
+                <div id="driverTutorial" class="hidden mb-8">
+                    <div class="glass-panel p-8 rounded-2xl border-2 border-amber-500/30 bg-gradient-to-br from-amber-900/10 to-red-900/10">
+                        <div class="flex items-start gap-6 mb-8">
+                            <div class="w-16 h-16 bg-gradient-to-br from-amber-500/20 to-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0 border border-amber-500/30">
+                                <i class="fas fa-exclamation-triangle text-amber-400 text-3xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h2 class="text-3xl font-black bg-gradient-to-r from-amber-400 to-red-400 bg-clip-text text-transparent mb-2">
+                                    Driver Setup Required
+                                </h2>
+                                <p class="text-gray-300 text-lg">
+                                    Let's get your driver set up step by step. Don't worry, we'll guide you through it!
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="step-indicator pending" data-step="1">1</div>
+                                    <div class="step-indicator pending" data-step="2">2</div>
+                                    <div class="step-indicator pending" data-step="3">3</div>
+                                    <div class="step-indicator pending" data-step="4">4</div>
+                                    <div class="step-indicator pending" data-step="5">5</div>
+                                    <div class="step-indicator pending" data-step="6">6</div>
+                                </div>
+                                <div class="text-sm text-gray-400 font-semibold">
+                                    <span id="currentStepNum">1</span> / 6
+                                </div>
+                            </div>
+                            <div class="h-1 bg-gray-800/40 rounded-full overflow-hidden">
+                                <div id="stepProgress" class="step-progress" style="width: 16.66%"></div>
+                            </div>
+                        </div>
+
+                        <div class="relative min-h-[400px]">
+                            <div id="tutorialStep1" class="tutorial-step">
+                                <div class="glass-panel p-6 rounded-xl bg-gray-900/40 border border-gray-700/50">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center border border-purple-500/30">
+                                            <i class="fas fa-shield-alt text-purple-400 text-xl"></i>
+                                        </div>
+                                        <h3 class="text-2xl font-bold text-white">Enable Test Signing</h3>
+                                    </div>
+                                    <p class="text-gray-300 mb-4 text-lg">First, we need to enable Test Signing mode on your system. This allows unsigned drivers to load.</p>
+                                    <p class="text-gray-400 mb-4">Enable Test Signing (or disable Secure Boot temporarily if necessary) and temporarily disable antivirus.</p>
+                                    <div class="bg-gray-800/60 p-4 rounded-lg border border-gray-700/50 mb-4">
+                                        <code class="text-green-400 font-mono text-base">bcdedit /set testsigning on</code>
+                                    </div>
+                                    <div class="p-4 bg-amber-900/20 rounded-xl border border-amber-500/30">
+                                        <p class="text-amber-300 flex items-start gap-2 text-sm">
+                                            <i class="fas fa-info-circle mt-1 flex-shrink-0"></i>
+                                            <span><strong>Important:</strong> Reboot your computer after running this command. If you cannot enable test signing via BCDEdit, enter BIOS/UEFI during boot (DEL/F2) and temporarily disable Secure Boot.</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="tutorialStep2" class="tutorial-step hidden">
+                                <div class="glass-panel p-6 rounded-xl bg-gray-900/40 border border-gray-700/50">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
+                                            <i class="fas fa-cog text-blue-400 text-xl"></i>
+                                        </div>
+                                        <h3 class="text-2xl font-bold text-white">Build the Driver</h3>
+                                    </div>
+                                    <p class="text-gray-300 mb-4 text-lg">Now let's build the driver in Visual Studio.</p>
+                                    <div class="bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
+                                        <p class="text-blue-300 mb-2 font-semibold">Open the project in Visual Studio and:</p>
+                                        <ul class="list-disc list-inside text-blue-200 space-y-2">
+                                            <li><i class="fas fa-check-circle text-green-400 mr-2"></i>All driver signing configuration removed</li>
+                                            <li><i class="fas fa-check-circle text-green-400 mr-2"></i>Simply build in <strong>Release x64</strong> mode</li>
+                                            <li><i class="fas fa-check-circle text-green-400 mr-2"></i>Driver will compile as unsigned binary</li>
+                                        </ul>
+                                        <div class="mt-4 p-4 bg-amber-900/20 rounded-xl border border-amber-500/30">
+                                            <p class="text-amber-300 text-sm">
+                                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                                <strong>Note:</strong> If you still get signing errors, right-click the project → Properties → Driver Signing → Sign Mode: Off
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="tutorialStep3" class="tutorial-step hidden">
+                                <div class="glass-panel p-6 rounded-xl bg-gray-900/40 border border-gray-700/50">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center border border-green-500/30">
+                                            <i class="fas fa-copy text-green-400 text-xl"></i>
+                                        </div>
+                                        <h3 class="text-2xl font-bold text-white">Copy Driver to System Directory</h3>
+                                    </div>
+                                    <p class="text-gray-300 mb-4 text-lg">Copy the compiled driver file to the Windows system drivers folder.</p>
+                                    <p class="text-gray-400 mb-4">Copy the driver file to the Windows system drivers directory:</p>
+                                    <div class="bg-gray-800/60 p-4 rounded-lg border border-gray-700/50">
+                                        <code class="text-green-400 font-mono text-base">C:\Windows\System32\drivers\NoMoreStealers.sys</code>
+                                    </div>
+                                    <div class="mt-4 p-4 bg-green-900/20 rounded-xl border border-green-500/30">
+                                        <p class="text-green-300 text-sm">
+                                            <i class="fas fa-lightbulb mr-2"></i>
+                                            <strong>Tip:</strong> You'll need administrator privileges to copy files to this directory.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="tutorialStep4" class="tutorial-step hidden">
+                                <div class="glass-panel p-6 rounded-xl bg-gray-900/40 border border-gray-700/50">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center border border-purple-500/30">
+                                            <i class="fas fa-registered text-purple-400 text-xl"></i>
+                                        </div>
+                                        <h3 class="text-2xl font-bold text-white">Configure Minifilter Instance</h3>
+                                    </div>
+                                    <p class="text-gray-300 mb-4 text-lg">Configure the registry to register the minifilter instance.</p>
+                                    <p class="text-gray-400 mb-4">Run these commands in an <strong>elevated Command Prompt</strong> (run as Administrator):</p>
+                                    <div class="bg-gray-800/60 p-4 rounded-lg border border-gray-700/50 space-y-3">
+                                        <code class="text-green-400 font-mono text-sm block">reg add "HKLM\SYSTEM\CurrentControlSet\Services\NoMoreStealers\Instances" /v DefaultInstance /t REG_SZ /d "NoMoreStealers Instance" /f</code>
+                                        <code class="text-green-400 font-mono text-sm block">reg add "HKLM\SYSTEM\CurrentControlSet\Services\NoMoreStealers\Instances\NoMoreStealers Instance" /v Altitude /t REG_SZ /d "370000" /f</code>
+                                        <code class="text-green-400 font-mono text-sm block">reg add "HKLM\SYSTEM\CurrentControlSet\Services\NoMoreStealers\Instances\NoMoreStealers Instance" /v Flags /t REG_DWORD /d 0 /f</code>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="tutorialStep5" class="tutorial-step hidden">
+                                <div class="glass-panel p-6 rounded-xl bg-gray-900/40 border border-gray-700/50">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-lg flex items-center justify-center border border-yellow-500/30">
+                                            <i class="fas fa-upload text-yellow-400 text-xl"></i>
+                                        </div>
+                                        <h3 class="text-2xl font-bold text-white">Load the Driver</h3>
+                                    </div>
+                                    <p class="text-gray-300 mb-4 text-lg">Almost there! Let's load the driver into the system.</p>
+                                    <p class="text-gray-400 mb-4">Load the driver using the Filter Manager Control command in an elevated Command Prompt:</p>
+                                    <div class="bg-gray-800/60 p-4 rounded-lg border border-gray-700/50 mb-4">
+                                        <code class="text-green-400 font-mono text-base">fltmc load NoMoreStealers</code>
+                                    </div>
+                                    <div class="p-4 bg-green-900/20 rounded-xl border border-green-500/30">
+                                        <p class="text-green-300 text-sm">
+                                            <i class="fas fa-check-circle mr-2"></i>
+                                            If successful, the driver is now loaded and the protection system should be active!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="tutorialStep6" class="tutorial-step hidden">
+                                <div class="glass-panel p-6 rounded-xl bg-gray-900/40 border border-gray-700/50">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-lg flex items-center justify-center border border-red-500/30">
+                                            <i class="fas fa-download text-red-400 text-xl"></i>
+                                        </div>
+                                        <h3 class="text-2xl font-bold text-white">Unload the Driver (Optional)</h3>
+                                    </div>
+                                    <p class="text-gray-300 mb-4 text-lg">When you're done using NoMoreStealers, you can unload the driver.</p>
+                                    <p class="text-gray-400 mb-4">To unload the driver when you're finished:</p>
+                                    <div class="bg-gray-800/60 p-4 rounded-lg border border-gray-700/50 mb-6">
+                                        <code class="text-green-400 font-mono text-base">fltmc unload NoMoreStealers</code>
+                                    </div>
+                                    <div class="p-4 bg-blue-900/20 rounded-xl border border-blue-500/30">
+                                        <p class="text-blue-300 flex items-start gap-2">
+                                            <i class="fas fa-lightbulb mt-1 flex-shrink-0"></i>
+                                            <span><strong>All Done!</strong> After completing all steps, restart the NoMoreStealers application. The driver status will be automatically detected and the protection system will activate.</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-800/50">
+                            <button id="tutorialBackBtn" class="btn-primary bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2" disabled>
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Go Back</span>
+                            </button>
+                            <button id="tutorialNextBtn" class="btn-primary flex items-center gap-2">
+                                <span>Next Step</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-white">Event Log</h2>
+                    <button id="clearAllBtn" class="btn-primary flex items-center gap-2">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Clear All Entries</span>
+                    </button>
+                </div>
+                
+                <div class="mb-6 flex items-center gap-3 flex-wrap">
+                    <span class="text-gray-400 font-medium text-sm">Filter:</span>
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-list mr-2"></i>All Logs
+                    </button>
+                    <button class="filter-btn" data-filter="antispy">
+                        <i class="fas fa-shield-alt mr-2"></i>Protector
+                    </button>
+                    <button class="filter-btn" data-filter="antirat">
+                        <i class="fas fa-shield-virus mr-2"></i>Anti Rat
+                    </button>
+                </div>
+                
+                <div class="space-y-4" id="eventsList"></div>
+                
+                <div id="emptyState" class="flex flex-col items-center justify-center h-full min-h-[500px]">
+                    <div class="relative mb-8">
+                        <div class="w-40 h-40 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-3xl flex items-center justify-center border border-purple-500/20 glow-effect">
+                            <i class="fas fa-shield-alt text-7xl text-purple-400/40"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-3xl font-bold text-gray-200 mb-3">Standing Guard</h3>
+                    <p class="text-gray-400 text-center max-w-md font-medium text-lg">
+                        Monitoring all process access attempts. Events will appear here instantly.
+                    </p>
+                </div>
+            </div>
+
+            <div id="antiratTab" class="hidden max-w-6xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-black bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent mb-4">
+                        Anti Rat Killswitch
+                    </h2>
+                    <p class="text-xl text-gray-400 font-medium">Advanced protection against Remote Access Trojans</p>
+                </div>
+
+                <div class="glass-panel p-12 rounded-2xl mb-8 border-2 border-red-500/30 bg-gradient-to-br from-red-900/10 to-orange-900/10">
+                    <div class="flex flex-col items-center justify-center space-y-8">
+                        <div class="w-32 h-32 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-3xl flex items-center justify-center border-2 border-red-500/30 glow-effect">
+                            <i class="fas fa-shield-virus text-6xl text-red-400"></i>
+                        </div>
+                        
+                        <div class="text-center space-y-4 max-w-2xl">
+                            <h3 class="text-3xl font-bold text-white">Killswitch Protection</h3>
+                            <p class="text-gray-300 text-lg leading-relaxed">
+                                When enabled, the killswitch monitors all processes for active TCP connections. 
+                                Any unsigned process with an active network connection will be automatically terminated, 
+                                protecting you from Remote Access Trojans (RATs) and other malware.
+                            </p>
+                        </div>
+
+                        <div class="w-full max-w-md">
+                            <button id="killswitchBtn" class="w-full btn-primary text-2xl py-6 px-8 flex items-center justify-center gap-4 group relative overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-r from-red-500/20 to-orange-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                <i class="fas fa-power-off text-3xl relative z-10 group-hover:text-white transition-colors" id="killswitchIcon"></i>
+                                <span class="font-black text-xl relative z-10 group-hover:text-white transition-colors" id="killswitchText">Enable Killswitch</span>
+                            </button>
+                        </div>
+
+                        <div id="killswitchStatus" class="glass-panel px-8 py-4 rounded-xl flex items-center gap-3 mt-4 hidden">
+                            <div class="w-3 h-3 bg-green-400 rounded-full live-pulse" id="killswitchStatusDot"></div>
+                            <span class="font-bold" id="killswitchStatusText">Killswitch Active</span>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-xl mt-8 max-w-3xl w-full border border-amber-500/30 bg-gradient-to-br from-amber-900/10 to-orange-900/10">
+                            <div class="flex items-start gap-4">
+                                <i class="fas fa-exclamation-triangle text-amber-400 text-2xl mt-1"></i>
+                                <div class="flex-1">
+                                    <h4 class="text-xl font-bold text-amber-300 mb-2">Warning</h4>
+                                    <p class="text-amber-200 text-sm leading-relaxed">
+                                        <strong>Use with caution:</strong> This feature will terminate any unsigned process with an active TCP connection. 
+                                        This may affect legitimate applications that are unsigned. Make sure you understand the implications before enabling.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settingsTab" class="hidden max-w-4xl mx-auto">
+                <div class="glass-panel p-8 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-900/10 to-blue-900/10">
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="w-14 h-14 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl flex items-center justify-center border border-purple-500/40">
+                            <i class="fas fa-sliders-h text-purple-300 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold text-white">Application Settings</h2>
+                            <p class="text-gray-300 mt-1">Configure integrations and preferences that persist across restarts.</p>
+                        </div>
+                    </div>
+
+                    <form id="settingsForm" class="space-y-6">
+                        <div>
+                            <label for="vtApiKeyInput" class="block text-sm font-semibold text-gray-300 mb-2 uppercase tracking-widest">VirusTotal API Key</label>
+                            <input id="vtApiKeyInput" type="password" autocomplete="off" placeholder="Enter your VirusTotal API key"
+                                class="w-full px-4 py-3 rounded-xl bg-gray-900/70 border border-gray-700/60 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/60 focus:border-purple-400/60 transition" />
+                            <p class="text-xs text-gray-400 mt-2">Your key is stored locally in your AppData\NoMoreStealers settings file and reused for VirusTotal lookups after restarts.</p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button id="saveSettingsBtn" type="submit" class="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-purple-600/70 to-pink-600/70 border border-purple-500/40 text-sm font-semibold text-white hover:shadow-lg transition">
+                                <i class="fas fa-save"></i>
+                                Save Settings
+                            </button>
+                            <p id="settingsStatus" class="text-sm text-gray-400 hidden"></p>
+                        </div>
+                    </form>
+
+                    <div class="mt-8 p-4 rounded-xl border border-blue-500/30 bg-blue-500/10 text-sm text-blue-200">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Need an API key? Create a free VirusTotal account and generate the key under <span class="font-semibold">User &gt; API Key</span>. Keep it private—treat it like a password.
+                    </div>
+                </div>
+            </div>
+ 
+            <div id="aboutTab" class="hidden max-w-6xl mx-auto">
+                <div class="text-center mb-8">
+                    <h2 class="text-5xl font-black bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent mb-4">
+                        The Story
+                    </h2>
+                    <p class="text-xl text-gray-400 font-medium">Why NoMoreStealers was created</p>
+                </div>
+
+                <div class="glass-panel p-8 rounded-2xl mb-12 border border-red-500/30 bg-gradient-to-br from-red-900/10 to-orange-900/10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-xl flex items-center justify-center border border-red-500/30">
+                            <i class="fas fa-fire text-red-400 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-3xl font-bold text-white">Born from Frustration</h3>
+                            <p class="text-red-300 font-semibold">A mission to protect innocent users</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/40 p-6 rounded-xl border border-gray-700/50">
+                        <p class="text-gray-300 text-lg leading-relaxed mb-4">
+                            <strong class="text-red-300">"I was fed up with people losing their hard-earned money."</strong> - Evilbytecode
+                        </p>
+                        <p class="text-gray-400 text-base leading-relaxed">
+                            Too many innocent users were falling victim to information stealers like <span class="text-red-400 font-semibold">Lumma</span>, 
+                            <span class="text-red-400 font-semibold">Rhadamanthys</span>, and countless other malware families. 
+                            Watching people lose their savings, crypto wallets, and personal data to these attacks was heartbreaking. 
+                            NoMoreStealers was born from the determination to give users a fighting chance against these threats - 
+                            a free, open-source shield that anyone can use to protect what matters most.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3 mt-4 text-sm text-gray-400">
+                        <i class="fas fa-shield-alt text-red-400"></i>
+                        <span>Protecting users since day one • Fighting the good fight • No profit, just protection</span>
+                    </div>
+                </div>
+
+                <!-- Project Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                    <div class="glass-panel p-6 rounded-2xl">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
+                                <i class="fas fa-shield-alt text-blue-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white">What It Does</h3>
+                        </div>
+                        <p class="text-gray-400 leading-relaxed">
+                            NoMoreStealers is a kernel-level minifilter driver that monitors and blocks unauthorized access to sensitive files and processes. 
+                            It specifically targets information-stealing malware that attempts to access browser data, cryptocurrency wallets, and other valuable user information.
+                        </p>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-2xl">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center border border-green-500/30">
+                                <i class="fas fa-code text-green-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white">Open Source</h3>
+                        </div>
+                        <p class="text-gray-400 leading-relaxed">
+                            Built with transparency in mind, NoMoreStealers is completely open source. 
+                            You can inspect every line of code, contribute improvements, or adapt it for your specific needs. 
+                            No hidden backdoors, no data collection - just pure protection.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="glass-panel p-8 rounded-2xl">
+                    <h3 class="text-3xl font-bold text-white mb-6 text-center">Key Features</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center border border-purple-500/30 mx-auto mb-4">
+                                <i class="fas fa-eye-slash text-purple-400 text-2xl"></i>
+                            </div>
+                            <h4 class="text-lg font-bold text-white mb-2">Anti-Spy Protection</h4>
+                            <p class="text-gray-400 text-sm">Blocks screen capture and prevents unauthorized monitoring of your activities.</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center border border-blue-500/30 mx-auto mb-4">
+                                <i class="fas fa-lock text-blue-400 text-2xl"></i>
+                            </div>
+                            <h4 class="text-lg font-bold text-white mb-2">Process Protection</h4>
+                            <p class="text-gray-400 text-sm">Monitors file system access and blocks malicious processes from accessing sensitive data.</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-gradient-to-br from-green-500/20 to-teal-500/20 rounded-xl flex items-center justify-center border border-green-500/30 mx-auto mb-4">
+                                <i class="fas fa-bolt text-green-400 text-2xl"></i>
+                            </div>
+                            <h4 class="text-lg font-bold text-white mb-2">Real-time Monitoring</h4>
+                            <p class="text-gray-400 text-sm">Instant detection and blocking of stealer attempts with detailed event logging.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="creditsTab" class="hidden max-w-6xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-4">
+                        The Team
+                    </h2>
+                    <p class="text-xl text-gray-400 font-medium">Meet the developers making it happen</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                    <!-- Creator Card -->
+                    <div class="contributor-card">
+                        <i class="fas fa-crown crown"></i>
+                        <div class="flex items-start gap-6">
+                            <div class="avatar">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <h3 class="text-2xl font-bold">Evilbytecode</h3>
+                                    <span class="badge">
+                                        <i class="fas fa-crown"></i>
+                                        Creator
+                                    </span>
+                                </div>
+                                <p class="text-gray-400 text-lg mb-4 leading-relaxed">
+                                    The passionate developer who couldn't stand watching people lose their money to stealers. Built NoMoreStealers from the ground up as a free defense against Lumma, Rhadamanthys, and other info-stealing malware that plague innocent users daily.
+                                </p>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="text-xs px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full font-semibold">Architecture</span>
+                                    <span class="text-xs px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full font-semibold">Core Engine</span>
+                                    <span class="text-xs px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full font-semibold">UI/UX Design</span>
+                                    <span class="text-xs px-3 py-1 bg-green-500/20 text-green-300 rounded-full font-semibold">Security Research</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Contributor Card -->
+                    <div class="contributor-card">
+                        <div class="flex items-start gap-6">
+                            <div class="avatar" style="background: linear-gradient(135deg, #60a5fa, #818cf8);">
+                                <i class="fas fa-laptop-code"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <h3 class="text-2xl font-bold">breakermaker-cmd</h3>
+                                    <span class="badge contributor-badge">
+                                        <i class="fas fa-star"></i>
+                                        Active Contributor
+                                    </span>
+                                </div>
+                                <p class="text-gray-400 text-lg mb-4 leading-relaxed">
+                                    A key contributor who has been instrumental in enhancing NoMoreStealers. Provided invaluable development support, feature implementations, and helped shape the project into what it is today.
+                                </p>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="text-xs px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full font-semibold">Development</span>
+                                    <span class="text-xs px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full font-semibold">Feature Design</span>
+                                    <span class="text-xs px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full font-semibold">Testing</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-8 rounded-2xl text-center">
+                    <i class="fas fa-heart text-5xl text-pink-400 mb-4"></i>
+                    <h3 class="text-2xl font-bold mb-3">Built with Passion</h3>
+                    <p class="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                        NoMoreStealers is an open-source project dedicated to protecting users from information-stealing malware. 
+                        Every contribution makes the digital world a little bit safer.
+                    </p>
+                    <div class="mt-6 flex justify-center gap-4">
+                        <div class="glass-panel px-6 py-3 rounded-xl">
+                            <div class="text-3xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">2</div>
+                            <div class="text-sm text-gray-400 font-semibold">Contributors</div>
+                        </div>
+                        <div class="glass-panel px-6 py-3 rounded-xl">
+                            <div class="text-3xl font-black bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">∞</div>
+                            <div class="text-sm text-gray-400 font-semibold">Protected Users</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl text-center mt-6 border border-purple-500/30 bg-gradient-to-br from-purple-900/10 to-pink-900/10">
+                    <i class="fas fa-coins text-3xl text-purple-400 mb-3"></i>
+                    <p class="text-gray-300 text-base">
+                        Want to support the project? Contact <a href="https://t.me/codepulze" target="_blank" class="text-purple-400 hover:text-purple-300 font-semibold underline decoration-purple-500/50 hover:decoration-purple-400 transition-colors">@codepulze</a> on Telegram
+                    </p>
+                </div>
+            </div>
+
+            <div id="eventDetailsOverlay" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+                <div class="relative bg-gray-900/95 border border-gray-700/70 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800/60">
+                        <div>
+                            <div class="text-xs uppercase text-gray-500 tracking-[0.35em] mb-1">Event Insight</div>
+                            <h3 id="eventDetailsTitle" class="text-2xl font-bold text-white">Event Details</h3>
+                        </div>
+                        <button id="eventDetailsClose" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="eventDetailsBody" class="p-6 overflow-y-auto max-h-[calc(90vh-4.5rem)]">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+            </div>
+                <script src="app.js"></script>
+
+        </main>
+    </div>

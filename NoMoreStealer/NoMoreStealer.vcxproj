@@ -74,6 +74,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <DisableProductionSignDebugWarnings>true</DisableProductionSignDebugWarnings>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
@@ -99,10 +100,11 @@
     <ClCompile>
       <ControlFlowGuard>false</ControlFlowGuard>
       <TreatWarningAsError>false</TreatWarningAsError>
+      <WarningLevel>Level2</WarningLevel>
     </ClCompile>
     <Link>
       <EntryPointSymbol>DriverEntry</EntryPointSymbol>
-      <AdditionalDependencies>FltMgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>FltMgr.lib;ntoskrnl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -131,8 +133,12 @@
   <ItemGroup>
     <ClInclude Include="internal\Callbacks\callbacks.h" />
     <ClInclude Include="internal\Comm\comm.h" />
+    <ClInclude Include="internal\Comm\comm_internal.h" />
     <ClInclude Include="internal\Paths\paths.h" />
+    <ClInclude Include="internal\Paths\paths_internal.h" />
     <ClInclude Include="internal\Process\process.h" />
+    <ClInclude Include="internal\Process\process_internal.h" />
+    <ClInclude Include="internal\Process\trusted_processes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

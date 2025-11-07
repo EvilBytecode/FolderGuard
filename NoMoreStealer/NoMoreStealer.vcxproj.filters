@@ -19,7 +19,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Inf Include="FolderGuard_testingminifilter.inf">
+    <Inf Include="NoMoreStealer.inf">
       <Filter>Driver Files</Filter>
     </Inf>
   </ItemGroup>
@@ -51,6 +51,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="internal\Comm\comm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="internal\Comm\comm_internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="internal\Paths\paths_internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="internal\Process\process_internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="internal\Process\trusted_processes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

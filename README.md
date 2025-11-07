@@ -1,95 +1,182 @@
-# NoMoreStealer
+# 🛡️ NoMoreStealer
 
-**NoMoreStealer** is a Windows file system minifilter driver designed to protect sensitive user data from untrusted processes.
-- THIS PROJECT IS IN DEMO, IT ISNT FOOLPROOF. UPDATES WILL COME OVERTIME - ANY PR IS HEAVILY WELCOME
-- THIS IS MY SECOND DRIVER, ANY HELP IS APPRECIATED!
----
+> **A Windows kernel-mode minifilter driver that monitors file system access to protect against information-stealing malware**
 
-## Overview
-
-NoMoreStealer monitors and controls access to configured sensitive paths, ensuring that only trusted processes can read, write, or delete protected data.
-
-**Key features:**
-
-* Blocks destructive or suspicious operations (create, overwrite, delete, raw-disk access) on protected paths unless the process is trusted.
-* Uses a **trust model** combining:
-
-  * Windows system processes
-  * A small allowlist of known safe processes (e.g., browsers, shell)
-  * Code integrity/signature checks
-* Emits **kernel debug logs (DbgPrint)** for every allow/deny decision, enabling analysis and fine-tuning.
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
+[![Status](https://img.shields.io/badge/status-Demo-orange.svg)]()
 
 ---
 
-## How It Works (High-Level)
+## 📖 Documentation
 
-* NoMoreStealer hooks into the Windows file system via **minifilter callbacks** for operations like `IRP_MJ_CREATE`, `WRITE`, and `SET_INFORMATION`.
-* The **Paths module** maintains an in-memory list of protected path prefixes.
-* The **Process module** evaluates whether the calling process is trusted.
-* If a process attempts an operation on a protected path and is not trusted, the driver **denies the request** with `STATUS_ACCESS_DENIED` and logs the decision.
+| 📋 Guide | 🔗 Link |
+|-----------|----------|
+| **🔧 Driver Setup** | [Setup Guide](docs/SETUP.md) |
+| **⚡ Wails Frontend** | [Wails Setup](docs/WAILS_SETUP.md) |
+| **🏗️ How It Works** | [Architecture](docs/ARCHITECTURE.md) |
+| **🤝 Contributing** | [Contributing Guide](docs/CONTRIBUTING.md) |
+| **🖌️ Showcase** | [Showacase of UI](docs/Showcase.md) |
+---
+
+## What NoMoreStealer Actually Does
+
+NoMoreStealer is a **Windows kernel minifilter driver** that intercepts file system operations (`IRP_MJ_CREATE` only) and blocks untrusted processes from accessing specific protected paths. It consists of two components:
+
+### Kernel Driver (`NoMoreStealer/`)
+- **File System Monitoring**: Hooks `IRP_MJ_CREATE` operations via Filter Manager
+- **Path Protection**: Maintains a hardcoded list of protected paths (browser profiles, wallets, etc.)
+- **Process Trust**: Uses simple allowlists and `PsIsProtectedProcessLight()` for trust decisions
+- **Communication**: Creates a shared memory section for user-mode notifications
+- **Logging**: Outputs decisions via `DbgPrint` for debugging
+
+### User-Mode Application (`NoMoreStealers_Usermode/`)
+- **Wails Frontend**: Desktop app with HTML/CSS/JavaScript UI
+- **Real-time Monitoring**: Reads shared memory section from kernel driver
+- **Event Display**: Shows blocked/allowed access attempts with process details
+- **Anti-Spy Feature**: Creates transparent overlay windows to block screen capture
+- **WebSocket Server**: Provides real-time updates to the frontend
+- **System Tray**: Minimizes to system tray with click-to-show functionality
 
 ---
 
-## Current Scope & Notes
+## Current Implementation Status
 
-* Protects common **data-stealing targets** (browser profiles, messaging app data). Paths can be modified in `internal/Paths/paths.cpp`.
-* Designed to be **conservative**: avoids blocking system or legitimate applications by default, but prevents obvious bypass attempts (e.g., delete-on-close or backup-intent on protected files).
-* **User-mode notifications are currently disabled**; all decisions are visible via kernel logs.
-* Requires **Test Signing or a production certificate** to load on modern Windows builds (Secure Boot prevents unsigned drivers).
-* **Note:** If anyone wants to create a user-mode communicator (KM ↔️ UM), I’d really appreciate it... that way, we could notify the user without relying on DbgPrint.
+### ✅ What Works
+- Basic file system interception on `IRP_MJ_CREATE`
+- Hardcoded path protection for common stealer targets
+- Simple process trust evaluation using allowlists
+- Shared memory communication between kernel and user-mode
+- Real-time event display in Wails frontend
+- Digital signature verification using WinVerifyTrust
+- Anti-spy overlay window creation
+- System tray integration
 
----
-
-## Driver Setup Instructions
-
-1. **Enable Test Signing** (or disable Secure Boot temporarily if necessary) and **temporarily disable antivirus**.
-
-   ```cmd
-   bcdedit /set testsigning on
-   ```
-
-   Reboot.
-
-   > If you cannot enable test signing via BCDEdit: enter BIOS/UEFI during boot (DEL/F2) and temporarily **disable Secure Boot**.
-
-2. **Build the driver** in **Release x64 mode**.
-
-3. **Copy the driver** to the system directory:
-
-   ```text
-   C:\Windows\System32\drivers\NoMoreStealer.sys
-   ```
-
-4. **Configure the minifilter instance** in an elevated Command Prompt:
-
-   ```cmd
-   reg add "HKLM\SYSTEM\CurrentControlSet\Services\NoMoreStealer\Instances" /v DefaultInstance /t REG_SZ /d "NoMoreStealer Instance" /f
-   reg add "HKLM\SYSTEM\CurrentControlSet\Services\NoMoreStealer\Instances\NoMoreStealer Instance" /v Altitude /t REG_SZ /d "370000" /f
-   reg add "HKLM\SYSTEM\CurrentControlSet\Services\NoMoreStealer\Instances\NoMoreStealer Instance" /v Flags /t REG_DWORD /d 0 /f
-   ```
-
-5. **Load the driver**:
-
-   ```cmd
-   fltmc load NoMoreStealer
-   ```
-
-6. **Unload the driver** when done:
-
-   ```cmd
-   fltmc unload NoMoreStealer
-   ```
+### ⚠️ Current Limitations
+- **Demo Status**: This is explicitly a demo/proof-of-concept
+- **Limited IRP Coverage**: Only monitors `IRP_MJ_CREATE`, not `WRITE`, `SET_INFORMATION`, etc.
+- **Hardcoded Paths**: Protected paths are compiled into the driver
+- **Basic Trust Model**: Simple filename-based allowlists, easily bypassed
+- **No Certificate Validation**: Uses `PsIsProtectedProcessLight()` but no custom cert checking
+- **DbgPrint Logging**: Relies on debug output instead of proper user notifications
+- **File Name Spoofing**: Malware can name itself `chrome.exe` to bypass checks
 
 ---
 
-## Additional Notes
+## Protected Paths (Hardcoded)
 
-* The **service name** is `NoMoreStealer` (not the filename). Ensure the INF/service install matches this name.
-* Use **VM snapshots** or backups when testing, as kernel crashes may occur.
-- for the love of me use DebugView
+The driver currently protects these specific paths:
 
-# ISSUES TO BE DONE (PLEASE PR)
-- No user-mode communicator (KM ↔️ UM), I’d really appreciate it... that way, we could notify the user without relying on DbgPrint.
-- File NAME Spoofing (attacker can name themselfs chrome.exe) -> be whitelisted -> my idea before was a parent process checking
-- Checking CERT using WinVerify (We would need A UM communicator). i dont want to do that stuff from kernel.
-- Hardening it completly.
+**Browsers:**
+- `\Google\Chrome\User Data`
+- `\Microsoft\Edge\User Data`
+- `\BraveSoftware\Brave-Browser\User Data`
+- `\Mozilla\Firefox\Profiles`
+- And others...
+
+**Cryptocurrency Wallets:**
+- `\AppData\Local\Exodus`
+- `\AppData\Roaming\Electrum\wallets`
+- `\AppData\Roaming\Bitcoin\wallets`
+- And others...
+
+**Communication Apps:**
+- `\AppData\Roaming\Discord`
+- `\AppData\Roaming\Telegram Desktop`
+- `\AppData\Roaming\Signal`
+
+---
+
+## Trust Model
+
+The driver considers processes "trusted" if they match:
+
+1. **System Processes**: `System`, `csrss.exe`, `winlogon.exe`, etc.
+2. **Hardcoded Allowlist**: `chrome.exe`, `firefox.exe`, `discord.exe`, etc.
+3. **Protected Processes**: Via `PsIsProtectedProcessLight()` (Windows 10+ only)
+
+**Note**: This is easily bypassed by malware naming itself as a trusted process.
+
+---
+
+## Quick Installation
+
+### Prerequisites
+- Windows 10/11 (x64)
+- Administrator privileges
+- Visual Studio with WDK (for building)
+- Go 1.19+ (for Wails frontend)
+
+### Basic Setup
+```cmd
+# 1. Enable test signing
+bcdedit /set testsigning on
+
+# 2. Reboot system
+shutdown /r /t 0
+
+# 3. Build driver in Visual Studio (Release x64)
+# 4. Copy NoMoreStealer.sys to C:\Windows\System32\drivers\
+# 5. Configure registry (see Setup Guide)
+# 6. Load driver: fltmc load NoMoreStealer
+```
+
+👉 **[Complete Setup Instructions](docs/SETUP.md)**
+
+---
+
+## Known Issues & TODOs
+
+### High Priority
+- **No User-Mode Communicator**: Currently uses `DbgPrint` instead of proper notifications
+- **File Name Spoofing**: Malware can impersonate trusted processes by filename
+- **Limited IRP Coverage**: Only monitors file creation, not writes/modifications
+- **Certificate Verification**: Needs proper WinVerify integration in kernel mode
+
+### Security Concerns
+- Easily bypassed by process name spoofing
+- No parent process verification
+- No behavioral analysis
+- Hardcoded paths can't be updated without recompiling
+---
+
+## Contributing
+
+This project welcomes contributions, especially for the known limitations:
+
+- **User-mode communication** to replace DbgPrint
+- **Enhanced trust verification** beyond simple filename matching
+- **Broader IRP coverage** for write operations
+- **Dynamic path configuration** without recompiling
+- **Anti-bypass techniques** against process spoofing
+
+See [Contributing Guide](docs/CONTRIBUTING.md) for details.
+
+---
+
+## Disclaimer
+
+**⚠️ Important Notice**
+
+This is a **demonstration project** and is not production-ready. It has known security limitations and should only be used for:
+- Educational purposes
+- Security research
+- Development and testing
+
+Do not rely on this for actual protection against sophisticated malware.
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**Made with the goal of protecting users from information stealers**
+
+*This is my second driver project - help and contributions are appreciated!*
+
+</div>
