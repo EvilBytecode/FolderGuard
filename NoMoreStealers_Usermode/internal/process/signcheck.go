@@ -93,9 +93,3 @@ func IsFileSignedWinVerifyTrust(path string) (bool, error) {
 	}
 	return false, nil
 }
-
-// IsFileSigned is a convenience wrapper for backward compatibility.
-func IsFileSigned(path string) bool {
-	ok, _ := IsFileSignedWinVerifyTrust(path)
-	return ok
-}
