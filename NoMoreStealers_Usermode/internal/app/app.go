@@ -217,8 +217,10 @@ func (a *App) OnStartup(ctx context.Context) {
 }
 
 func (a *App) OnDomReady(ctx context.Context) {
-	a.Ctx = ctx
-	go a.initTrayIcon()
+    a.Ctx = ctx
+    runtime.WindowSetMinSize(ctx, 1400, 900)
+    runtime.WindowSetSize(ctx, 1600, 1020)
+    go a.initTrayIcon()
 }
 
 func (a *App) OnBeforeClose(ctx context.Context) (prevent bool) {
@@ -481,6 +483,23 @@ func (a *App) TerminateProcess(pid uint32) error {
         return fmt.Errorf("process %d is not currently running", pid)
     }
     return process.TerminateByPID(pid)
+}
+
+func (a *App) SuspendProcess(pid uint32) error {
+    if pid == 0 {
+        return fmt.Errorf("process id must be greater than zero")
+    }
+    if !isProcessRunning(pid) {
+        return fmt.Errorf("process %d is not currently running", pid)
+    }
+    return process.SuspendByPID(pid)
+}
+
+func (a *App) ResumeProcess(pid uint32) error {
+    if pid == 0 {
+        return fmt.Errorf("process id must be greater than zero")
+    }
+    return process.ResumeByPID(pid)
 }
 
 func (a *App) LookupVirusTotal(hash string) (*VirusTotalReport, error) {

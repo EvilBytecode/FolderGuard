@@ -28,11 +28,15 @@ export function Quit():Promise<void>;
 
 export function RescanVirusTotal(arg1:string):Promise<app.VirusTotalReport>;
 
+export function ResumeProcess(arg1:number):Promise<void>;
+
 export function RevealPath(arg1:string):Promise<void>;
 
 export function Show():Promise<void>;
 
 export function ShowMainWindow():Promise<void>;
+
+export function SuspendProcess(arg1:number):Promise<void>;
 
 export function TerminateProcess(arg1:number):Promise<void>;
 

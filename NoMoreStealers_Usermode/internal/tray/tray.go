@@ -22,6 +22,12 @@ var (
 	procGetMessageW      = user32.NewProc("GetMessageW")
 	procTranslateMessage = user32.NewProc("TranslateMessage")
 	procDispatchMessageW = user32.NewProc("DispatchMessageW")
+	procCreatePopupMenu  = user32.NewProc("CreatePopupMenu")
+	procAppendMenuW      = user32.NewProc("AppendMenuW")
+	procTrackPopupMenu   = user32.NewProc("TrackPopupMenu")
+	procSetForegroundWindow = user32.NewProc("SetForegroundWindow")
+	procGetCursorPos     = user32.NewProc("GetCursorPos")
+	procDestroyMenu      = user32.NewProc("DestroyMenu")
 )
 
 var (
@@ -43,6 +49,9 @@ const (
 	WM_RBUTTONUP    = 0x0205
 	IDI_APPLICATION = 32512
 	CW_USEDEFAULT   = 0x80000000
+	TPM_LEFTALIGN   = 0x0000
+	TPM_BOTTOMALIGN = 0x0020
+	TPM_RETURNCMD   = 0x0100
 )
 
 var WM_TRAYICON = uint32(WM_USER + 1)
@@ -74,6 +83,7 @@ type wndClassEx struct {
 
 var hiddenHwnd windows.Handle
 var trayAppShow func()
+var trayAppExit func()
 
 // CreateTrayIcon creates a tray icon and starts a message loop to handle clicks
 func CreateTrayIcon(_ windows.Handle, tooltip string) error {
@@ -142,8 +152,9 @@ func RemoveTrayIcon() error {
 }
 
 // SetTrayCallbacks registers a callback for left-click actions
-func SetTrayCallbacks(onShow func()) {
+func SetTrayCallbacks(onShow func(), onExit func()) {
 	trayAppShow = onShow
+	trayAppExit = onExit
 }
 
 // createHiddenWindow creates an invisible window that listens for tray icon messages
@@ -155,9 +166,9 @@ func createHiddenWindow() (windows.Handle, error) {
 		case WM_TRAYICON:
 			switch lParam {
 			case WM_LBUTTONUP:
-				go onTrayClick()
+				onTrayClick()
 			case WM_RBUTTONUP:
-				go onTrayRightClick()
+				onTrayRightClick()
 			}
 		case WM_DESTROY:
 			procDefWindowProcW.Call(uintptr(hwnd), uintptr(msg), wParam, lParam)
@@ -226,5 +237,34 @@ func onTrayClick() {
 
 // onTrayRightClick handles right-clicks
 func onTrayRightClick() {
-	println("[Tray] Right-click detected")
+	menu, _, err := procCreatePopupMenu.Call()
+	if menu == 0 {
+		if err != windows.ERROR_SUCCESS {
+			println("[Tray] Failed to create popup menu:", err)
+		}
+		return
+	}
+	defer procDestroyMenu.Call(menu)
+
+	exitText, _ := windows.UTF16PtrFromString("Exit")
+	const exitCmd = 1
+	procAppendMenuW.Call(menu, 0, exitCmd, uintptr(unsafe.Pointer(exitText)))
+
+	var pt struct{ X, Y int32 }
+	procGetCursorPos.Call(uintptr(unsafe.Pointer(&pt)))
+	procSetForegroundWindow.Call(uintptr(hiddenHwnd))
+
+	selection, _, _ := procTrackPopupMenu.Call(
+		menu,
+		TPM_LEFTALIGN|TPM_BOTTOMALIGN|TPM_RETURNCMD,
+		uintptr(pt.X),
+		uintptr(pt.Y),
+		0,
+		uintptr(hiddenHwnd),
+		0,
+	)
+
+	if selection == exitCmd && trayAppExit != nil {
+		trayAppExit()
+	}
 }

@@ -129,7 +129,7 @@ namespace NoMoreStealer {
                 { "searchprotocolhost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
                 { "searchfilterhost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
                 { "shellexperiencehost.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", "\\windows\\systemapps\\", nullptr }, 3 },
-           
+                { "zen.exe", { "\\AppData\\Local\\Zen Browser\\",  nullptr }, 3 }
 
             };
             static const ULONG PROCESS_PATH_MAPPINGS_COUNT = sizeof(PROCESS_PATH_MAPPINGS) / sizeof(PROCESS_PATH_MAPPINGS[0]);
@@ -147,7 +147,7 @@ namespace NoMoreStealer {
                 "atomic.exe", "litecoin-qt.exe", "monerod.exe", "armory.exe", "bytecoind.exe",
                 "coinomi.exe", "dash-qt.exe", "mist.exe", "geth.exe", "guarda.exe",
                 "jaxx.exe", "mymonero.exe", "zcashd.exe", "lghub_agent.exe",
-                "feather launch"
+                "feather launch", "zen.exe"
             };
             static const ULONG TRUSTED_PROCESSES_COUNT = sizeof(TRUSTED_PROCESSES) / sizeof(TRUSTED_PROCESSES[0]);
 

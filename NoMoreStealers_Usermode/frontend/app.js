@@ -1103,21 +1103,7 @@ class NoMoreStealers {
             ? '<span class="inline-flex items-center gap-2 text-green-400 font-semibold"><i class="fas fa-circle text-[8px]"></i>Running</span>'
             : '<span class="inline-flex items-center gap-2 text-gray-400 font-semibold"><i class="fas fa-circle text-[8px]"></i>Not Running</span>';
 
-        const processActions = (details.isProcessRunning && Number(pid)) ? `
-            <div class="glass-panel p-5 rounded-xl border border-red-500/40 bg-red-500/5 space-y-4">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                        <div class="text-xs uppercase text-red-300 tracking-[0.25em] mb-2">Process Controls</div>
-                        <p class="text-sm text-gray-300 max-w-xl">Terminate this process directly if you believe it is malicious or continuing to run.</p>
-                    </div>
-                    <button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/20 border border-red-500/40 text-sm font-semibold text-red-200 hover:text-white hover:border-red-400 transition disabled:opacity-60"
-                        data-terminate-pid="${this.escapeHtml(String(pid))}">
-                        <i class="fas fa-skull-crossbones"></i>
-                        Terminate Process
-                    </button>
-                </div>
-            </div>
-        ` : '';
+        const processControls = this.renderProcessControlPanel(details, originalEvent);
 
         const summary = `
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1176,7 +1162,7 @@ class NoMoreStealers {
         this.eventDetailsBody.innerHTML = `
             <div class="space-y-6">
                 ${summary}
-                ${processActions}
+                ${processControls}
                 ${executableSection}
                 ${targetSection}
                 ${targetRawSection}
@@ -1231,6 +1217,17 @@ class NoMoreStealers {
                 this.uploadFileToVirusTotal(path, btn);
             });
         });
+
+        this.eventDetailsBody.querySelectorAll('[data-process-panel]').forEach(panel => {
+            const pid = parseInt(panel.dataset.pid, 10);
+            panel.querySelectorAll('.process-action-btn').forEach(btn => {
+                btn.addEventListener('click', (evt) => {
+                    evt.stopPropagation();
+                    const action = btn.dataset.action;
+                    this.handleProcessAction(action, pid, btn, panel);
+                });
+            });
+        });
     }
 
     renderFileDetails(title, file, showSignature = false) {
@@ -1254,6 +1251,8 @@ class NoMoreStealers {
         const created = file.created ? this.formatDateTime(file.created) : '';
         const firstSeen = file.firstSeen ? this.formatDateTime(file.firstSeen) : '';
         const vtBlock = this.renderVirusTotalDetails(file);
+        const peBlock = this.renderPEAnalysis(file.pe, file);
+        const stringsBlock = this.renderStringsSummary(file.strings, file);
 
         let hashBlock = '';
         if (file.hashAvailable && file.sha256) {
@@ -1340,6 +1339,8 @@ class NoMoreStealers {
                         </div>
                     ` : ''}
                     ${hashBlock}
+                    ${peBlock}
+                    ${stringsBlock}
                     ${vtBlock}
                 </div>
                 ${actions}
@@ -1391,7 +1392,7 @@ class NoMoreStealers {
                 </div>
             </div>
         ` : `
-            <p class="text-sm text-gray-400">No VirusTotal report yet. ${hash ? 'Click <span class="font-semibold">Refresh Report</span> to query using the SHA-256 hash.' : 'Provide a VirusTotal API key and use the upload button to submit the file directly.'}</p>
+            <p class="text-sm text-gray-400">No VirusTotal report yet. Click <span class="font-semibold">Refresh Report</span> to query using the SHA-256 hash.</p>
         `;
 
         const lastAnalysisValue = report?.lastAnalysisDate ? this.escapeHtml(this.formatDateTime(report.lastAnalysisDate)) : 'No analysis date available';
@@ -1405,7 +1406,7 @@ class NoMoreStealers {
 
         const notesBlock = notes ? `<ul class="mt-3 space-y-2" data-vt-notes>${notes}</ul>` : '<ul class="mt-3 space-y-2 hidden" data-vt-notes></ul>';
 
-        const link = report?.link ? this.escapeHtml(report.link) : (hash ? `https://www.virustotal.com/gui/file/${hash}/detection` : 'https://www.virustotal.com/');
+        const link = report?.link ? this.escapeHtml(report.link) : `https://www.virustotal.com/gui/file/${hash}/detection`;
 
         return `
             <div class="border border-purple-500/30 rounded-lg px-4 py-4 bg-gray-900/40 space-y-3" data-vt-card data-vt-hash="${hash}" data-vt-path="${this.escapeHtml(file.path || '')}">
@@ -1438,6 +1439,212 @@ class NoMoreStealers {
                 ${notesBlock}
             </div>
         `;
+    }
+
+    renderPEAnalysis(pe, file) {
+        if (!pe) {
+            return '';
+        }
+
+        const architecture = this.escapeHtml(pe.architecture || 'Unknown');
+        const type = this.escapeHtml(pe.fileType || 'Unknown');
+        const entryPoint = this.escapeHtml(pe.entryPoint || 'Unknown');
+        const imageBase = this.escapeHtml(pe.imageBase || 'Unknown');
+        const sectionCount = typeof pe.numberOfSections === 'number' ? pe.numberOfSections : (pe.sections?.length || 0);
+        const sizeOfImage = pe.sizeOfImage ? this.escapeHtml(pe.sizeOfImage) : 'Unknown';
+        const importCount = typeof pe.importCount === 'number' ? pe.importCount : 0;
+        const exportCount = typeof pe.exportCount === 'number' ? pe.exportCount : 0;
+        const fileSizeText = typeof file?.size === 'number' ? this.formatBytes(file.size) : 'Unknown';
+
+        const sections = (pe.sections || []).map(section => {
+            const entropyValue = typeof section.entropy === 'number' ? section.entropy.toFixed(2) : '—';
+            const entropyBadge = this.getEntropyBadge(section.entropyLabel, entropyValue);
+            const riskBadge = this.getRiskBadge(section.risk);
+            const permissions = Array.isArray(section.permissions) && section.permissions.length
+                ? section.permissions.map(p => this.escapeHtml(p)).join(', ')
+                : '—';
+            return `
+                <tr class="border-t border-gray-800/40">
+                    <td class="px-3 py-2 font-mono text-sm text-gray-200">${this.escapeHtml(section.name || 'Unnamed')}</td>
+                    <td class="px-3 py-2 font-mono text-xs text-gray-400">${this.escapeHtml(section.virtualSize || '0x0')}</td>
+                    <td class="px-3 py-2 font-mono text-xs text-gray-400">${this.escapeHtml(section.virtualAddress || '0x0')}</td>
+                    <td class="px-3 py-2 font-mono text-xs text-gray-400">${this.escapeHtml(section.rawSize || '0x0')}</td>
+                    <td class="px-3 py-2">${entropyBadge}</td>
+                    <td class="px-3 py-2 text-xs text-gray-300">${permissions}</td>
+                    <td class="px-3 py-2">${riskBadge}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const sectionsTable = sections ? `
+            <div class="overflow-x-auto border border-gray-800/40 rounded-lg">
+                <table class="min-w-full text-left">
+                    <thead class="bg-gray-900/60 text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="px-3 py-2 font-semibold">Name</th>
+                            <th class="px-3 py-2 font-semibold">Virtual Size</th>
+                            <th class="px-3 py-2 font-semibold">Virtual Address</th>
+                            <th class="px-3 py-2 font-semibold">Raw Size</th>
+                            <th class="px-3 py-2 font-semibold">Entropy</th>
+                            <th class="px-3 py-2 font-semibold">Permissions</th>
+                            <th class="px-3 py-2 font-semibold">Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        ${sections}
+                    </tbody>
+                </table>
+            </div>
+        ` : `
+            <div class="p-4 bg-gray-900/40 border border-gray-800/40 rounded-lg text-sm text-gray-400">
+                No section data available for this file.
+            </div>
+        `;
+
+        return `
+            <div class="space-y-4">
+                <div class="glass-panel p-5 rounded-xl border border-purple-500/30 space-y-4 bg-gray-900/30">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <div class="text-xs uppercase text-gray-500 tracking-[0.3em]">PE Analysis</div>
+                            <div class="text-lg font-semibold text-white">Portable Executable Insights</div>
+                        </div>
+                        <div class="text-sm text-gray-400">
+                            File Size: <span class="text-gray-200 font-semibold">${fileSizeText}</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-300">
+                        <div>
+                            <div class="text-xs uppercase text-gray-500">Architecture</div>
+                            <div>${architecture}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase text-gray-500">Type</div>
+                            <div>${type}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase text-gray-500">Entry Point</div>
+                            <div>${entryPoint}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase text-gray-500">Image Base</div>
+                            <div>${imageBase}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase text-gray-500">Sections</div>
+                            <div>${sectionCount}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase text-gray-500">Size of Image</div>
+                            <div>${sizeOfImage}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase text-gray-500">Imported Symbols</div>
+                            <div>${importCount}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase text-gray-500">Exported Symbols</div>
+                            <div>${exportCount}</div>
+                        </div>
+                    </div>
+                    ${sectionsTable}
+                </div>
+            </div>
+        `;
+    }
+
+    renderStringsSummary(stringsSummary, file) {
+        if (!stringsSummary || typeof stringsSummary !== 'object') {
+            return '';
+        }
+
+        const count = typeof stringsSummary.count === 'number' ? stringsSummary.count : (stringsSummary.Count || 0);
+        const samples = stringsSummary.samples || stringsSummary.Samples || [];
+        const keywordsMap = stringsSummary.keywords || stringsSummary.Keywords || {};
+
+        const sampleItems = samples.map(sample => `
+            <li class="font-mono text-xs text-gray-200 break-all">${this.escapeHtml(sample)}</li>
+        `).join('');
+
+        const keywordEntries = Object.entries(keywordsMap || {});
+        const keywordSection = keywordEntries.length ? `
+            <div class="space-y-2">
+                <div class="text-xs uppercase text-gray-500">Keyword Matches</div>
+                <div class="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbars">
+                    ${keywordEntries.map(([kw, matches]) => `
+                        <div>
+                            <div class="text-xs font-semibold text-blue-300">${this.escapeHtml(kw)} <span class="text-gray-500">(${matches.length})</span></div>
+                            <div class="font-mono text-[11px] text-gray-300 break-all">${matches.slice(0, 5).map(m => this.escapeHtml(m)).join('<span class=\"text-gray-600\"> • </span>')}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        ` : '';
+
+        const sampleList = sampleItems ? `
+            <ul class="space-y-1 max-h-56 overflow-y-auto pr-2 custom-scrollbars">${sampleItems}</ul>
+        ` : '<p class="text-xs text-gray-400">No printable strings detected.</p>';
+
+        return `
+            <div class="glass-panel p-5 rounded-xl border border-green-500/30 bg-green-900/10 space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                        <div class="text-xs uppercase text-green-300 tracking-[0.3em]">String Intelligence</div>
+                        <div class="text-lg font-semibold text-white">Printable Strings Overview</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-400">Total</span>
+                        <span class="text-lg font-semibold text-green-200">${count}</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <div class="text-xs uppercase text-gray-500 mb-2">Search Strings</div>
+                        <div class="flex items-center gap-2">
+                            <input type="text" class="strings-search-input w-full px-3 py-2 rounded-lg bg-gray-900/60 border border-gray-700/60 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500/60 focus:border-green-400/60 transition" placeholder="Search for keywords..." data-file-path="${this.escapeHtml(file.path || '')}" />
+                            <button class="strings-search-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/20 border border-green-500/40 text-xs font-semibold text-green-200 hover:text-white hover:border-green-400/60 transition" data-file-path="${this.escapeHtml(file.path || '')}">
+                                <i class="fas fa-search"></i>
+                                Search
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-1">Enter keywords to highlight matches in the sample list below (case-insensitive).</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <div class="text-xs uppercase text-gray-500">Sample Strings</div>
+                            <div class="strings-sample-list" data-file-path="${this.escapeHtml(file.path || '')}">
+                                ${sampleList}
+                            </div>
+                        </div>
+                        ${keywordSection}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getEntropyBadge(level, value) {
+        const label = typeof level === 'string' ? level.toLowerCase() : 'low';
+        let classes = 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
+        if (label === 'high') {
+            classes = 'border-red-500/40 bg-red-500/10 text-red-300';
+        } else if (label === 'medium') {
+            classes = 'border-amber-500/40 bg-amber-500/10 text-amber-200';
+        }
+        const valueText = this.escapeHtml(String(value ?? '—'));
+        const labelText = this.escapeHtml((level || 'Low').toUpperCase());
+        return `<span class="inline-flex items-center gap-2 px-2 py-1 rounded-lg text-xs font-semibold ${classes}">${valueText}<span>${labelText}</span></span>`;
+    }
+
+    getRiskBadge(level) {
+        const risk = (level || 'Low').toLowerCase();
+        let classes = 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
+        if (risk === 'high') {
+            classes = 'border-red-500/40 bg-red-500/10 text-red-300';
+        } else if (risk === 'medium') {
+            classes = 'border-amber-500/40 bg-amber-500/10 text-amber-200';
+        }
+        return `<span class="inline-flex items-center gap-2 px-2 py-1 rounded-lg text-xs font-semibold ${classes}">${this.escapeHtml(level || 'Low')}</span>`;
     }
 
     renderEventDetailsLoading() {
@@ -1788,6 +1995,134 @@ class NoMoreStealers {
         } catch (error) {
             console.error('Clipboard error:', error);
             alert('Failed to copy to clipboard.');
+        }
+    }
+
+    renderProcessControlPanel(details, originalEvent) {
+        const pid = details?.pid || originalEvent?.pid;
+        const processName = details?.processName || originalEvent?.processName || 'Unknown process';
+        const isRunning = !!details?.isProcessRunning;
+
+        if (!pid) {
+            return '';
+        }
+
+        const statusBadge = isRunning
+            ? '<span class="inline-flex items-center gap-2 px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-200"><i class="fas fa-circle text-[6px]"></i>Running</span>'
+            : '<span class="inline-flex items-center gap-2 px-2 py-1 rounded-lg text-xs font-semibold bg-gray-500/10 border border-gray-500/30 text-gray-300"><i class="fas fa-circle text-[6px]"></i>Stopped</span>';
+
+        return `
+            <div class="glass-panel p-5 rounded-xl border border-blue-500/30 bg-blue-900/20 space-y-4" data-process-panel data-pid="${pid}">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <div class="text-xs uppercase text-blue-300 tracking-[0.3em]">Process Control Panel</div>
+                        <div class="text-lg font-semibold text-white">${this.escapeHtml(processName)} (PID ${pid})</div>
+                    </div>
+                    <div>${statusBadge}</div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button class="process-action-btn bg-amber-500/20 border border-amber-500/40 text-amber-200 hover:text-white hover:border-amber-400/60" data-action="suspend" ${isRunning ? '' : 'disabled'}>
+                        <i class="fas fa-pause-circle"></i>
+                        <span>Suspend</span>
+                    </button>
+                    <button class="process-action-btn bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 hover:text-white hover:border-emerald-400/60" data-action="resume" ${isRunning ? 'disabled' : ''}>
+                        <i class="fas fa-play-circle"></i>
+                        <span>Resume</span>
+                    </button>
+                    <button class="process-action-btn bg-red-500/20 border border-red-500/40 text-red-200 hover:text-white hover:border-red-400/60" data-action="terminate">
+                        <i class="fas fa-skull-crossbones"></i>
+                        <span>Terminate</span>
+                    </button>
+                </div>
+                <p class="text-xs text-blue-200/80">
+                    Use these controls to manage the process directly. Suspend pauses execution without killing it; resume continues execution; terminate ends the process entirely.
+                </p>
+            </div>
+        `;
+    }
+
+    async handleProcessAction(action, pid, button, panel) {
+        if (!pid) {
+            alert('Invalid PID for process control.');
+            return;
+        }
+
+        const originalContent = button ? button.innerHTML : '';
+        try {
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Working…';
+            }
+
+            if (action === 'terminate') {
+                await this.terminateProcess(String(pid), button);
+            } else if (action === 'suspend') {
+                await this.suspendProcess(pid);
+            } else if (action === 'resume') {
+                await this.resumeProcess(pid);
+            }
+
+            this.updateProcessPanelState(action, panel);
+        } catch (error) {
+            console.error('Process control error:', error);
+            alert('Process control failed: ' + (error?.message || error));
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalContent || button.innerHTML;
+            }
+        }
+    }
+
+    async suspendProcess(pid) {
+        if (window.go?.app?.App?.SuspendProcess) {
+            await window.go.app.App.SuspendProcess(pid);
+        } else if (window.SuspendProcess) {
+            await window.SuspendProcess(pid);
+        } else {
+            throw new Error('SuspendProcess binding not available in this build.');
+        }
+    }
+
+    async resumeProcess(pid) {
+        if (window.go?.app?.App?.ResumeProcess) {
+            await window.go.app.App.ResumeProcess(pid);
+        } else if (window.ResumeProcess) {
+            await window.ResumeProcess(pid);
+        } else {
+            throw new Error('ResumeProcess binding not available in this build.');
+        }
+    }
+
+    updateProcessPanelState(lastAction, panel) {
+        if (!panel) {
+            return;
+        }
+        const suspendBtn = panel.querySelector('[data-action="suspend"]');
+        const resumeBtn = panel.querySelector('[data-action="resume"]');
+        const statusBadge = panel.querySelector('div > div > span');
+
+        if (lastAction === 'terminate') {
+            if (suspendBtn) suspendBtn.disabled = true;
+            if (resumeBtn) resumeBtn.disabled = true;
+            if (statusBadge) {
+                statusBadge.className = 'inline-flex items-center gap-2 px-2 py-1 rounded-lg text-xs font-semibold bg-gray-500/10 border border-gray-500/30 text-gray-300';
+                statusBadge.innerHTML = '<i class="fas fa-circle text-[6px]"></i>Stopped';
+            }
+        } else if (lastAction === 'suspend') {
+            if (suspendBtn) suspendBtn.disabled = true;
+            if (resumeBtn) resumeBtn.disabled = false;
+            if (statusBadge) {
+                statusBadge.className = 'inline-flex items-center gap-2 px-2 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-200';
+                statusBadge.innerHTML = '<i class="fas fa-circle text-[6px]"></i>Suspended';
+            }
+        } else if (lastAction === 'resume') {
+            if (suspendBtn) suspendBtn.disabled = false;
+            if (resumeBtn) resumeBtn.disabled = true;
+            if (statusBadge) {
+                statusBadge.className = 'inline-flex items-center gap-2 px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-200';
+                statusBadge.innerHTML = '<i class="fas fa-circle text-[6px]"></i>Running';
+            }
         }
     }
 }

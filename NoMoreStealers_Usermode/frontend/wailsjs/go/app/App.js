@@ -54,6 +54,10 @@ export function RescanVirusTotal(arg1) {
   return window['go']['app']['App']['RescanVirusTotal'](arg1);
 }
 
+export function ResumeProcess(arg1) {
+  return window['go']['app']['App']['ResumeProcess'](arg1);
+}
+
 export function RevealPath(arg1) {
   return window['go']['app']['App']['RevealPath'](arg1);
 }
@@ -64,6 +68,10 @@ export function Show() {
 
 export function ShowMainWindow() {
   return window['go']['app']['App']['ShowMainWindow']();
+}
+
+export function SuspendProcess(arg1) {
+  return window['go']['app']['App']['SuspendProcess'](arg1);
 }
 
 export function TerminateProcess(arg1) {

@@ -14,12 +14,14 @@ func main() {
 	// Connect tray click → reopen GUI
 	tray.SetTrayCallbacks(func() {
 		app.ShowMainWindow()
+	}, func() {
+		app.Quit()
 	})
 
 	err := wails.Run(&options.App{
 		Title:            "NoMoreStealers",
-		Width:            1300,
-		Height:           800,
+		Width:            1500,
+		Height:           950,
 		AssetServer:      &assetserver.Options{Assets: AssetFS()},
 		BackgroundColour: &options.RGBA{R: 27, G: 27, B: 38, A: 255},
 		OnStartup:        app.OnStartup,
