@@ -1,6 +1,10 @@
 package process
 
 import (
+    "errors"
+    "unsafe"
+
+    "golang.org/x/sys/windows"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -23,6 +27,7 @@ var (
 	ProcAdjustTokenPrivileges = Advapi32.NewProc("AdjustTokenPrivileges")
 )
 
+// GetFilePathFromPID retrieves the executable file path of a given process ID.
 func GetFilePathFromPID(pid uint32) (string, error) {
 	token, err := windows.OpenCurrentProcessToken()
 	if err == nil {
@@ -63,6 +68,7 @@ func GetFilePathFromPID(pid uint32) (string, error) {
 	ret, _, err := ProcGetModuleFileNameExW.Call(uintptr(hProcess), 0, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
 	if ret == 0 {
 		if err != nil && err.Error() == "The operation completed successfully." {
+			if windows.UTF16ToString(buf) != "" {
 				if windows.UTF16ToString(buf) != "" {
 				return windows.UTF16ToString(buf), nil
 			}
@@ -72,6 +78,19 @@ func GetFilePathFromPID(pid uint32) (string, error) {
 	return windows.UTF16ToString(buf), nil
 }
 
+// TerminateByPID attempts to terminate the process identified by the provided PID.
+func TerminateByPID(pid uint32) error {
+    if pid == 0 {
+        return errors.New("invalid process id")
+    }
+
+    handle, err := windows.OpenProcess(windows.PROCESS_TERMINATE, false, pid)
+    if err != nil {
+        return err
+    }
+    defer windows.CloseHandle(handle)
+
+    return windows.TerminateProcess(handle, 1)
 func IsFileSigned(filePath string) bool {
 	actualPath := filePath
 

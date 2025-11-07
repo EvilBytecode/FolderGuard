@@ -1,8 +1,102 @@
+﻿#pragma once
+// Kernel-mode safe Trusted processes / path mapping header
+// No CRT, no STL, no SAL annotations. Uses only simple C-style routines safe for kernel.
+#include <ntifs.h>
+#include <ntstrsafe.h>
+
+#ifndef MAX_PATH
+#define MAX_PATH 260
+#endif
+
+// Buffer length for path handling
+#define PATH_BUF_LEN 512
 #pragma once
 
 namespace NoMoreStealer {
     namespace Process {
         namespace Trusted {
+            typedef unsigned long ULONG_PTR_T;
+
+            struct ProcessPathMapping {
+                const CHAR* processName; // expected lowercase name (e.g. "chrome.exe")
+                const CHAR* paths[4];    // expected lowercase path substrings
+                ULONG pathCount;
+            };
+
+            // -------------------------
+            // Small helpers (no CRT)
+            // -------------------------
+            static inline VOID SafeCopyA(CHAR* dest, SIZE_T destCount, const CHAR* src)
+            {
+                if (!dest) return;
+                if (!src) {
+                    dest[0] = '\0';
+                    return;
+                }
+                SIZE_T i = 0;
+                for (; i + 1 < destCount && src[i] != '\0'; ++i) {
+                    dest[i] = src[i];
+                }
+                dest[i] = '\0';
+            }
+
+            static inline VOID AsciiToLowerInPlace(CHAR* str, SIZE_T maxLen)
+            {
+                if (!str) return;
+                for (SIZE_T i = 0; i < maxLen && str[i] != '\0'; ++i) {
+                    if (str[i] >= 'A' && str[i] <= 'Z') {
+                        str[i] = static_cast<CHAR>(str[i] - 'A' + 'a');
+                    }
+                }
+            }
+
+            static inline SIZE_T SafeStrLen(const CHAR* s, SIZE_T maxLen)
+            {
+                if (!s) return 0;
+                SIZE_T i = 0;
+                while (i < maxLen && s[i] != '\0') ++i;
+                return i;
+            }
+
+            static inline BOOLEAN AsciiEqualsI(const CHAR* a, const CHAR* b)
+            {
+                if (a == b) return TRUE;
+                if (!a || !b) return FALSE;
+                for (;; ++a, ++b) {
+                    CHAR ca = *a;
+                    CHAR cb = *b;
+                    if (ca >= 'A' && ca <= 'Z') ca = static_cast<CHAR>(ca - 'A' + 'a');
+                    if (cb >= 'A' && cb <= 'Z') cb = static_cast<CHAR>(cb - 'A' + 'a');
+                    if (ca == '\0' && cb == '\0') return TRUE;
+                    if (ca == '\0' || cb == '\0') return FALSE;
+                    if (ca != cb) return FALSE;
+                }
+            }
+
+            static inline BOOLEAN AsciiStrStrI(const CHAR* haystack, const CHAR* needle)
+            {
+                if (!haystack || !needle) return FALSE;
+                SIZE_T nlen = SafeStrLen(needle, PATH_BUF_LEN);
+                SIZE_T hlen = SafeStrLen(haystack, PATH_BUF_LEN);
+                if (nlen == 0) return TRUE;
+                if (nlen > hlen) return FALSE;
+                for (SIZE_T i = 0; i + nlen <= hlen; ++i) {
+                    SIZE_T j = 0;
+                    for (; j < nlen; ++j) {
+                        CHAR ch = haystack[i + j];
+                        CHAR nd = needle[j];
+                        if (ch >= 'A' && ch <= 'Z') ch = static_cast<CHAR>(ch - 'A' + 'a');
+                        if (nd >= 'A' && nd <= 'Z') nd = static_cast<CHAR>(nd - 'A' + 'a');
+                        if (ch != nd) break;
+                    }
+                    if (j == nlen) return TRUE;
+                }
+                return FALSE;
+            }
+
+            // -------------------------
+            // Data: mappings & lists
+            // -------------------------
 
             struct ProcessPathMapping {
                 const CHAR* processName;
@@ -17,6 +111,15 @@ namespace NoMoreStealer {
                 { "firefox.exe", { "\\program files\\mozilla firefox", "\\program files (x86)\\mozilla firefox", "\\appdata\\local\\mozilla firefox", "\\appdata\\roaming\\mozilla firefox" }, 4 },
                 { "opera.exe", { "\\program files\\opera", "\\program files (x86)\\opera", "\\appdata\\local\\programs\\opera", "\\appdata\\roaming\\opera software" }, 4 },
                 { "discord.exe", { "\\appdata\\local\\discord", "\\appdata\\roaming\\discord", nullptr, nullptr }, 2 },
+                { "discordptb.exe", { "\\appdata\\local\\discordptb", "\\appdata\\roaming\\discord", nullptr, nullptr }, 2 },
+                { "discordcanary.exe", { "\\appdata\\local\\discordcanary", "\\appdata\\roaming\\discord", nullptr, nullptr }, 2 },
+                { "update.exe", { "\\appdata\\local\\discord", "\\appdata\\local\\discordptb", "\\appdata\\local\\discordcanary", nullptr }, 3 },
+                { "telegram.exe", { "\\appdata\\roaming\\telegram desktop", "\\program files\\telegram desktop", nullptr, nullptr }, 2 },
+                { "signal.exe", { "\\appdata\\local\\programs\\signal", "\\program files\\signal", nullptr, nullptr }, 2 },
+                { "explorer.exe", { "\\windows\\explorer.exe", nullptr, nullptr, nullptr }, 1 },
+                { "runtimebroker.exe", { "\\windows\\system32\\runtimebroker.exe", "\\windows\\syswow64\\runtimebroker.exe", nullptr, nullptr }, 2 },
+                { "werfault.exe", { "\\windows\\system32\\werfault.exe", "\\windows\\syswow64\\werfault.exe", nullptr, nullptr }, 2 },
+                { "csrss.exe", { "\\windows\\system32\\", "\\windows\\syswow64\\", nullptr, nullptr }, 2 },
                 { "Discordptb.exe", { "\\appdata\\local\\discord", "\\appdata\\roaming\\discord", nullptr, nullptr }, 2 },
                 { "DiscordCanary.exe", { "\\appdata\\local\\discord", "\\appdata\\roaming\\discord", nullptr, nullptr }, 2 },
                 { "telegram.exe", { "\\appdata\\roaming\\telegram desktop", "\\program files\\telegram desktop", nullptr, nullptr }, 2 },

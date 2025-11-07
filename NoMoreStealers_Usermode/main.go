@@ -2,6 +2,7 @@ package main
 
 import (
 	apppkg "NoMoreStealers/internal/app"
+	"NoMoreStealers/internal/tray"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -9,6 +10,12 @@ import (
 
 func main() {
 	app := apppkg.New()
+
+	// Connect tray click → reopen GUI
+	tray.SetTrayCallbacks(func() {
+		app.ShowMainWindow()
+	})
+
 	err := wails.Run(&options.App{
 		Title:            "NoMoreStealers",
 		Width:            1300,
@@ -20,6 +27,7 @@ func main() {
 		OnBeforeClose:    app.OnBeforeClose,
 		Bind:             []interface{}{app},
 	})
+
 	if err != nil {
 		println("Error:", err.Error())
 	}

@@ -88,6 +88,33 @@
             left: 100%;
         }
 
+        .filter-btn {
+            padding: 8px 16px;
+            background: rgba(18, 18, 26, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .filter-btn:hover {
+            background: rgba(18, 18, 26, 0.8);
+            border-color: rgba(167, 139, 250, 0.4);
+            color: var(--text-primary);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));
+            border-color: rgba(167, 139, 250, 0.5);
+            color: var(--accent-purple);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+        }
+
         .tab-btn {
             padding: 12px 24px;
             background: transparent;
@@ -419,6 +446,15 @@
                     <button class="tab-btn active" data-tab="events">
                         <i class="fas fa-list-ul mr-2"></i>Events
                     </button>
+<<<<<<< nomorestealer1
+                    <button class="tab-btn" data-tab="antirat">
+                        <i class="fas fa-shield-virus mr-2"></i>Anti Rat
+                    </button>
+                    <button class="tab-btn" data-tab="settings">
+                        <i class="fas fa-sliders-h mr-2"></i>Settings
+                    </button>
+=======
+>>>>>>> main
                     <button class="tab-btn" data-tab="about">
                         <i class="fas fa-info-circle mr-2"></i>About
                     </button>
@@ -613,6 +649,30 @@
                     </div>
                 </div>
 
+<<<<<<< nomorestealer1
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-white">Event Log</h2>
+                    <button id="clearAllBtn" class="btn-primary flex items-center gap-2">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Clear All Entries</span>
+                    </button>
+                </div>
+                
+                <div class="mb-6 flex items-center gap-3 flex-wrap">
+                    <span class="text-gray-400 font-medium text-sm">Filter:</span>
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-list mr-2"></i>All Logs
+                    </button>
+                    <button class="filter-btn" data-filter="antispy">
+                        <i class="fas fa-shield-alt mr-2"></i>Protector
+                    </button>
+                    <button class="filter-btn" data-filter="antirat">
+                        <i class="fas fa-shield-virus mr-2"></i>Anti Rat
+                    </button>
+                </div>
+                
+=======
+>>>>>>> main
                 <div class="space-y-4" id="eventsList"></div>
                 
                 <div id="emptyState" class="flex flex-col items-center justify-center h-full min-h-[500px]">
@@ -628,6 +688,97 @@
                 </div>
             </div>
 
+<<<<<<< nomorestealer1
+            <div id="antiratTab" class="hidden max-w-6xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-black bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent mb-4">
+                        Anti Rat Killswitch
+                    </h2>
+                    <p class="text-xl text-gray-400 font-medium">Advanced protection against Remote Access Trojans</p>
+                </div>
+
+                <div class="glass-panel p-12 rounded-2xl mb-8 border-2 border-red-500/30 bg-gradient-to-br from-red-900/10 to-orange-900/10">
+                    <div class="flex flex-col items-center justify-center space-y-8">
+                        <div class="w-32 h-32 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-3xl flex items-center justify-center border-2 border-red-500/30 glow-effect">
+                            <i class="fas fa-shield-virus text-6xl text-red-400"></i>
+                        </div>
+                        
+                        <div class="text-center space-y-4 max-w-2xl">
+                            <h3 class="text-3xl font-bold text-white">Killswitch Protection</h3>
+                            <p class="text-gray-300 text-lg leading-relaxed">
+                                When enabled, the killswitch monitors all processes for active TCP connections. 
+                                Any unsigned process with an active network connection will be automatically terminated, 
+                                protecting you from Remote Access Trojans (RATs) and other malware.
+                            </p>
+                        </div>
+
+                        <div class="w-full max-w-md">
+                            <button id="killswitchBtn" class="w-full btn-primary text-2xl py-6 px-8 flex items-center justify-center gap-4 group relative overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-r from-red-500/20 to-orange-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                <i class="fas fa-power-off text-3xl relative z-10 group-hover:text-white transition-colors" id="killswitchIcon"></i>
+                                <span class="font-black text-xl relative z-10 group-hover:text-white transition-colors" id="killswitchText">Enable Killswitch</span>
+                            </button>
+                        </div>
+
+                        <div id="killswitchStatus" class="glass-panel px-8 py-4 rounded-xl flex items-center gap-3 mt-4 hidden">
+                            <div class="w-3 h-3 bg-green-400 rounded-full live-pulse" id="killswitchStatusDot"></div>
+                            <span class="font-bold" id="killswitchStatusText">Killswitch Active</span>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-xl mt-8 max-w-3xl w-full border border-amber-500/30 bg-gradient-to-br from-amber-900/10 to-orange-900/10">
+                            <div class="flex items-start gap-4">
+                                <i class="fas fa-exclamation-triangle text-amber-400 text-2xl mt-1"></i>
+                                <div class="flex-1">
+                                    <h4 class="text-xl font-bold text-amber-300 mb-2">Warning</h4>
+                                    <p class="text-amber-200 text-sm leading-relaxed">
+                                        <strong>Use with caution:</strong> This feature will terminate any unsigned process with an active TCP connection. 
+                                        This may affect legitimate applications that are unsigned. Make sure you understand the implications before enabling.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settingsTab" class="hidden max-w-4xl mx-auto">
+                <div class="glass-panel p-8 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-900/10 to-blue-900/10">
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="w-14 h-14 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl flex items-center justify-center border border-purple-500/40">
+                            <i class="fas fa-sliders-h text-purple-300 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold text-white">Application Settings</h2>
+                            <p class="text-gray-300 mt-1">Configure integrations and preferences that persist across restarts.</p>
+                        </div>
+                    </div>
+
+                    <form id="settingsForm" class="space-y-6">
+                        <div>
+                            <label for="vtApiKeyInput" class="block text-sm font-semibold text-gray-300 mb-2 uppercase tracking-widest">VirusTotal API Key</label>
+                            <input id="vtApiKeyInput" type="password" autocomplete="off" placeholder="Enter your VirusTotal API key"
+                                class="w-full px-4 py-3 rounded-xl bg-gray-900/70 border border-gray-700/60 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/60 focus:border-purple-400/60 transition" />
+                            <p class="text-xs text-gray-400 mt-2">Your key is stored locally in your AppData\NoMoreStealers settings file and reused for VirusTotal lookups after restarts.</p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button id="saveSettingsBtn" type="submit" class="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-purple-600/70 to-pink-600/70 border border-purple-500/40 text-sm font-semibold text-white hover:shadow-lg transition">
+                                <i class="fas fa-save"></i>
+                                Save Settings
+                            </button>
+                            <p id="settingsStatus" class="text-sm text-gray-400 hidden"></p>
+                        </div>
+                    </form>
+
+                    <div class="mt-8 p-4 rounded-xl border border-blue-500/30 bg-blue-500/10 text-sm text-blue-200">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Need an API key? Create a free VirusTotal account and generate the key under <span class="font-semibold">User &gt; API Key</span>. Keep it private—treat it like a password.
+                    </div>
+                </div>
+            </div>
+ 
+=======
+>>>>>>> main
             <div id="aboutTab" class="hidden max-w-6xl mx-auto">
                 <div class="text-center mb-8">
                     <h2 class="text-5xl font-black bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent mb-4">
@@ -813,6 +964,26 @@
                     </p>
                 </div>
             </div>
+<<<<<<< nomorestealer1
+
+            <div id="eventDetailsOverlay" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+                <div class="relative bg-gray-900/95 border border-gray-700/70 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800/60">
+                        <div>
+                            <div class="text-xs uppercase text-gray-500 tracking-[0.35em] mb-1">Event Insight</div>
+                            <h3 id="eventDetailsTitle" class="text-2xl font-bold text-white">Event Details</h3>
+                        </div>
+                        <button id="eventDetailsClose" class="text-gray-400 hover:text-white transition-colors text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="eventDetailsBody" class="p-6 overflow-y-auto max-h-[calc(90vh-4.5rem)]">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+            </div>
+=======
+>>>>>>> main
                 <script src="app.js"></script>
 
         </main>
